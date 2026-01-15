@@ -181,13 +181,16 @@ Create a new site configuration:
 sudo nano /etc/nginx/sites-available/appofas
 ```
 
-Add the following configuration:
+Add the following configuration (initial setup for HTTP - will be upgraded to HTTPS in SSL section):
 
 ```nginx
 server {
     listen 80;
     listen [::]:80;
     server_name your-domain.com www.your-domain.com;
+    
+    # Note: This is the initial HTTP configuration. After SSL setup with Let's Encrypt,
+    # this will be automatically modified to redirect to HTTPS.
 
     root /home/appofas/appofas/dist;
     index index.html;
@@ -346,81 +349,61 @@ sudo systemctl status certbot.timer
 
 ## Process Management
 
-### Using systemd (for development server)
+### Recommended: Serve Static Files with Nginx/Apache
 
-If you want to run the Vite development server in production (not recommended, use the built static files instead):
+The recommended approach is to serve the built static files directly from Nginx or Apache as configured in the [Web Server Configuration](#web-server-configuration) section above. No additional process management is needed as the files are served directly by the web server.
 
-Create a systemd service file:
+### Alternative: Node.js HTTP Server
 
-```bash
-sudo nano /etc/systemd/system/appofas.service
-```
+If you need to serve the application using Node.js (for example, during testing or in specific deployment scenarios), you can use a simple HTTP server or PM2.
 
-Add the following:
+#### Using PM2 for Node.js HTTP Server
 
-```ini
-[Unit]
-Description=Appofas Task Management Application
-After=network.target
+If you need to run a Node.js server:
 
-[Service]
-Type=simple
-User=appofas
-WorkingDirectory=/home/appofas/appofas
-Environment="NODE_ENV=production"
-Environment="PORT=3000"
-ExecStart=/usr/bin/npm run preview
-Restart=on-failure
-RestartSec=10
-
-[Install]
-WantedBy=multi-user.target
-```
-
-Enable and start the service:
+Install PM2 and serve:
 
 ```bash
-sudo systemctl daemon-reload
-sudo systemctl enable appofas
-sudo systemctl start appofas
-sudo systemctl status appofas
-```
-
-### Using PM2 (Alternative)
-
-Install PM2:
-
-```bash
+# Install PM2 globally
 sudo npm install -g pm2
-```
 
-Start the application:
-
-```bash
+# Install serve package locally in the project
 cd /home/appofas/appofas
-pm2 start npm --name "appofas" -- run preview
+npm install -g serve
+
+# Start serving the built files
+pm2 start serve --name "appofas" -- dist -s -p 3000
+
+# Save PM2 configuration
 pm2 save
+
+# Setup PM2 to start on boot
 pm2 startup
+
+# Then run the command PM2 outputs
 ```
+
+Note: This is only needed if you're not using Nginx/Apache to serve the static files directly.
 
 ## Monitoring and Maintenance
 
 ### Check Application Logs
 
-For systemd:
-```bash
-sudo journalctl -u appofas -f
-```
-
-For PM2:
-```bash
-pm2 logs appofas
-```
-
 For Nginx:
 ```bash
 sudo tail -f /var/log/nginx/access.log
 sudo tail -f /var/log/nginx/error.log
+```
+
+For Apache:
+```bash
+sudo tail -f /var/log/apache2/access.log
+sudo tail -f /var/log/apache2/error.log
+```
+
+For PM2 (if using Node.js server):
+```bash
+pm2 logs appofas
 ```
 
 ### Monitor System Resources
@@ -436,8 +419,7 @@ free -h
 top
 
 # Check running services
-sudo systemctl status nginx
-sudo systemctl status appofas  # if using systemd
+sudo systemctl status nginx  # or apache2
 ```
 
 ### Update Application
@@ -458,14 +440,11 @@ npm install
 # Rebuild application
 npm run build
 
-# If using systemd, restart the service
-sudo systemctl restart appofas
+# If using PM2 for Node.js server, restart it
+pm2 restart appofas  # Only if using PM2
 
-# If using PM2, restart the process
-pm2 restart appofas
-
-# Clear Nginx cache if needed
-sudo systemctl reload nginx
+# For Nginx/Apache serving static files, just reload the web server
+sudo systemctl reload nginx  # or: sudo systemctl reload apache2
 ```
 
 ### Backup
@@ -500,10 +479,10 @@ Make it executable and schedule with cron:
 ```bash
 chmod +x /home/appofas/backup.sh
 
-# Add to crontab (daily at 2 AM)
+# Add to crontab (daily at 2 AM with logging)
 crontab -e
-# Add this line:
-# 0 2 * * * /home/appofas/backup.sh
+# Add this line to run backup daily at 2 AM and log output:
+# 0 2 * * * /home/appofas/backup.sh >> /var/log/appofas_backup.log 2>&1
 ```
 
 ### Firewall Configuration
@@ -526,18 +505,26 @@ sudo ufw status
 
 ## Troubleshooting
 
-### Application won't start
+### Static files not loading
 
-1. Check logs: `sudo journalctl -u appofas -n 50`
+1. Verify the build was successful: `ls -la /home/appofas/appofas/dist`
+2. Check Nginx/Apache configuration points to correct directory
+3. Verify file permissions: `sudo chmod -R 755 /home/appofas/appofas/dist`
+4. Check web server error logs
+
+### Nginx/Apache returns 404 errors
+
+1. Verify Nginx configuration: `sudo nginx -t` (or `sudo apache2ctl configtest`)
+2. Check that the site is enabled in sites-enabled
+3. Verify the document root path is correct
+4. Check Nginx/Apache error logs: `sudo tail -f /var/log/nginx/error.log`
+
+### PM2 application won't start (if using Node.js server)
+
+1. Check PM2 logs: `pm2 logs appofas`
 2. Verify Node.js version: `node --version`
 3. Check if port is already in use: `sudo netstat -tulpn | grep :3000`
 4. Verify file permissions: `ls -la /home/appofas/appofas`
-
-### Nginx returns 502 Bad Gateway
-
-1. Check if application is running: `sudo systemctl status appofas`
-2. Verify Nginx configuration: `sudo nginx -t`
-3. Check Nginx error logs: `sudo tail -f /var/log/nginx/error.log`
 
 ### SSL certificate issues
 
