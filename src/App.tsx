@@ -1,5 +1,275 @@
-function App() {
-    return <div></div>
-}
+import { useState, useEffect } from 'react'
+import { Task, TaskStatus, CreateTaskInput, UpdateTaskInput, TaskFilters } from '@/domain/task'
+import { User } from '@/domain/user'
+import { taskService } from '@/services/task-service'
+import { authService } from '@/services/auth-service'
+import { TaskBoard } from '@/components/task/TaskBoard'
+import { TaskList } from '@/components/task/TaskList'
+import { TaskFormDialog } from '@/components/task/TaskFormDialog'
+import { Button } from '@/components/ui/button'
+import { Input } from '@/components/ui/input'
+import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs'
+import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger, DropdownMenuSeparator } from '@/components/ui/dropdown-menu'
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
+import { Toaster } from '@/components/ui/sonner'
+import { Plus, Kanban, ListBullets, MagnifyingGlass, Funnel, SignOut, User as UserIcon } from '@phosphor-icons/react'
+import { toast } from 'sonner'
 
-export default App
+type ViewMode = 'board' | 'list'
+
+export default function App() {
+  const [user, setUser] = useState<User | null>(null)
+  const [tasks, setTasks] = useState<Task[]>([])
+  const [filteredTasks, setFilteredTasks] = useState<Task[]>([])
+  const [viewMode, setViewMode] = useState<ViewMode>('board')
+  const [isFormOpen, setIsFormOpen] = useState(false)
+  const [editingTask, setEditingTask] = useState<Task | null>(null)
+  const [filters, setFilters] = useState<TaskFilters>({})
+  const [searchQuery, setSearchQuery] = useState('')
+  const [isLoading, setIsLoading] = useState(true)
+
+  useEffect(() => {
+    loadUser()
+    loadTasks()
+  }, [])
+
+  useEffect(() => {
+    applyFilters()
+  }, [tasks, filters, searchQuery])
+
+  const loadUser = async () => {
+    const currentUser = await authService.getCurrentUser()
+    setUser(currentUser)
+  }
+
+  const loadTasks = async () => {
+    setIsLoading(true)
+    try {
+      const allTasks = await taskService.getTasks()
+      setTasks(allTasks)
+    } catch (error) {
+      toast.error('Failed to load tasks')
+    } finally {
+      setIsLoading(false)
+    }
+  }
+
+  const applyFilters = async () => {
+    const filtered = await taskService.filterTasks({
+      ...filters,
+      search: searchQuery
+    })
+    setFilteredTasks(filtered)
+  }
+
+  const handleCreateTask = async (data: CreateTaskInput) => {
+    try {
+      const newTask = await taskService.createTask(data, user?.id || 'anonymous')
+      setTasks([...tasks, newTask])
+      toast.success('Task created successfully')
+    } catch (error) {
+      toast.error('Failed to create task')
+    }
+  }
+
+  const handleUpdateTask = async (data: CreateTaskInput) => {
+    if (!editingTask) return
+    
+    try {
+      const updateData: UpdateTaskInput = {
+        id: editingTask.id,
+        ...data
+      }
+      const updated = await taskService.updateTask(updateData)
+      setTasks(tasks.map(t => t.id === updated.id ? updated : t))
+      toast.success('Task updated successfully')
+      setEditingTask(null)
+    } catch (error) {
+      toast.error('Failed to update task')
+    }
+  }
+
+  const handleDeleteTask = async (id: string) => {
+    try {
+      await taskService.deleteTask(id)
+      setTasks(tasks.filter(t => t.id !== id))
+      toast.success('Task deleted successfully')
+    } catch (error) {
+      toast.error('Failed to delete task')
+    }
+  }
+
+  const handleStatusChange = async (id: string, status: TaskStatus) => {
+    try {
+      const updated = await taskService.updateTask({ id, status })
+      setTasks(tasks.map(t => t.id === updated.id ? updated : t))
+      toast.success('Status updated')
+    } catch (error) {
+      toast.error('Failed to update status')
+    }
+  }
+
+  const handleEditTask = (task: Task) => {
+    setEditingTask(task)
+    setIsFormOpen(true)
+  }
+
+  const handleCloseForm = () => {
+    setIsFormOpen(false)
+    setEditingTask(null)
+  }
+
+  if (!user) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-background pattern-dots">
+        <div className="text-center space-y-4 p-8 bg-card rounded-xl shadow-lg max-w-md">
+          <div className="w-16 h-16 bg-primary rounded-full flex items-center justify-center mx-auto">
+            <UserIcon className="w-8 h-8 text-primary-foreground" weight="bold" />
+          </div>
+          <h1 className="text-3xl font-bold">TaskFlow</h1>
+          <p className="text-muted-foreground">
+            Please authenticate with GitHub to access the application
+          </p>
+          <p className="text-sm text-muted-foreground">
+            This application uses GitHub authentication for secure access
+          </p>
+        </div>
+      </div>
+    )
+  }
+
+  return (
+    <div className="min-h-screen bg-background">
+      <Toaster position="top-right" />
+      <header className="border-b border-border bg-card sticky top-0 z-10 shadow-sm">
+        <div className="container mx-auto px-6 py-4">
+          <div className="flex items-center justify-between gap-4">
+            <div className="flex items-center gap-3">
+              <div className="w-10 h-10 bg-primary rounded-lg flex items-center justify-center">
+                <Kanban className="w-6 h-6 text-primary-foreground" weight="bold" />
+              </div>
+              <h1 className="text-2xl font-bold">TaskFlow</h1>
+            </div>
+
+            <div className="flex items-center gap-3">
+              <DropdownMenu>
+                <DropdownMenuTrigger asChild>
+                  <Button variant="ghost" className="gap-2">
+                    <Avatar className="w-8 h-8">
+                      <AvatarImage src={user.avatarUrl} />
+                      <AvatarFallback>{user.login.substring(0, 2).toUpperCase()}</AvatarFallback>
+                    </Avatar>
+                    <span className="hidden md:inline">{user.login}</span>
+                  </Button>
+                </DropdownMenuTrigger>
+                <DropdownMenuContent align="end">
+                  <DropdownMenuItem disabled>
+                    <UserIcon className="mr-2 h-4 w-4" />
+                    {user.email}
+                  </DropdownMenuItem>
+                  <DropdownMenuSeparator />
+                  <DropdownMenuItem disabled>
+                    <SignOut className="mr-2 h-4 w-4" />
+                    Sign Out
+                  </DropdownMenuItem>
+                </DropdownMenuContent>
+              </DropdownMenu>
+            </div>
+          </div>
+        </div>
+      </header>
+
+      <main className="container mx-auto px-6 py-8">
+        <div className="space-y-6">
+          <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
+            <div>
+              <h2 className="text-3xl font-bold mb-1">My Tasks</h2>
+              <p className="text-muted-foreground">
+                {filteredTasks.length} {filteredTasks.length === 1 ? 'task' : 'tasks'}
+              </p>
+            </div>
+
+            <div className="flex items-center gap-2">
+              <Tabs value={viewMode} onValueChange={(v) => setViewMode(v as ViewMode)}>
+                <TabsList>
+                  <TabsTrigger value="board" className="gap-2">
+                    <Kanban className="w-4 h-4" />
+                    <span className="hidden sm:inline">Board</span>
+                  </TabsTrigger>
+                  <TabsTrigger value="list" className="gap-2">
+                    <ListBullets className="w-4 h-4" />
+                    <span className="hidden sm:inline">List</span>
+                  </TabsTrigger>
+                </TabsList>
+              </Tabs>
+
+              <Button onClick={() => setIsFormOpen(true)} className="gap-2">
+                <Plus className="w-4 h-4" weight="bold" />
+                New Task
+              </Button>
+            </div>
+          </div>
+
+          <div className="flex flex-col md:flex-row gap-3">
+            <div className="relative flex-1">
+              <MagnifyingGlass className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
+              <Input
+                placeholder="Search tasks..."
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+                className="pl-10"
+              />
+            </div>
+
+            <div className="flex gap-2">
+              <Select
+                value={filters.status?.[0] || 'all'}
+                onValueChange={(v) => setFilters({ ...filters, status: v === 'all' ? undefined : [v as TaskStatus] })}
+              >
+                <SelectTrigger className="w-[140px]">
+                  <Funnel className="w-4 h-4 mr-2" />
+                  <SelectValue placeholder="Status" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">All Status</SelectItem>
+                  <SelectItem value={TaskStatus.TODO}>To Do</SelectItem>
+                  <SelectItem value={TaskStatus.IN_PROGRESS}>In Progress</SelectItem>
+                  <SelectItem value={TaskStatus.IN_REVIEW}>In Review</SelectItem>
+                  <SelectItem value={TaskStatus.DONE}>Done</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+          </div>
+
+          {isLoading ? (
+            <div className="flex items-center justify-center h-64">
+              <div className="text-muted-foreground">Loading tasks...</div>
+            </div>
+          ) : viewMode === 'board' ? (
+            <TaskBoard
+              tasks={filteredTasks}
+              onEdit={handleEditTask}
+              onDelete={handleDeleteTask}
+              onStatusChange={handleStatusChange}
+            />
+          ) : (
+            <TaskList
+              tasks={filteredTasks}
+              onEdit={handleEditTask}
+              onDelete={handleDeleteTask}
+              onStatusChange={handleStatusChange}
+            />
+          )}
+        </div>
+      </main>
+
+      <TaskFormDialog
+        open={isFormOpen}
+        onClose={handleCloseForm}
+        onSubmit={editingTask ? handleUpdateTask : handleCreateTask}
+        task={editingTask}
+      />
+    </div>
+  )
+}
