@@ -110,6 +110,7 @@ Use the Supabase CLI to run the Docker stack on your server and point the fronte
 sudo apt install -y docker.io docker-compose-plugin
 sudo usermod -aG docker $USER
 # log out and back in (or run `newgrp docker`) for group changes to take effect
+# note: docker group membership grants root-level privileges; use rootless Docker if you need stricter isolation
 ```
 
 If you want a global `supabase` binary, run `npm install -g supabase` (ensure your npm global prefix has safe permissions). Otherwise, prefix commands below with `npx supabase@latest`.
@@ -121,7 +122,7 @@ supabase init
 supabase start
 ```
 
-3. Configure GitHub OAuth and your app URL in `supabase/config.toml` (for example, set `auth.site_url` and `auth.additional_redirect_urls` and add the GitHub provider). Store `GITHUB_CLIENT_ID` and `GITHUB_SECRET` in `supabase/.env` (created by `supabase init` and loaded automatically when `supabase start` runs) or provide them via the environment for the Supabase containers.
+3. Configure GitHub OAuth and your app URL in `supabase/config.toml` (create a GitHub OAuth app first, then set `auth.site_url` and `auth.additional_redirect_urls` and add the GitHub provider). Store `GITHUB_CLIENT_ID` and `GITHUB_SECRET` in `supabase/.env` (created by `supabase init` and loaded automatically when `supabase start` runs) or provide them via the environment for the Supabase containers.
 
 ```toml
 [auth]
@@ -163,7 +164,7 @@ create table if not exists team_members (
 5. Run `supabase status` and use the API URL and anon key to set:
 
 ```bash
-VITE_SUPABASE_URL=https://your-supabase-api-domain
+VITE_SUPABASE_URL=https://supabase.your-domain.com
 VITE_SUPABASE_ANON_KEY=your_supabase_anon_key
 ```
 
