@@ -4,7 +4,9 @@ A professional task management system with user authentication, role-based acces
 
 ## Features
 
-- User authentication with GitHub OAuth via Supabase
+- **Flexible Authentication Options:**
+  - Email/Password registration and login
+  - GitHub OAuth via Supabase
 - Task management (Create, Read, Update, Delete)
 - Multiple view layouts (Kanban board, List view, Calendar view)
 - Task filtering and search
@@ -63,14 +65,16 @@ Copy the `API URL` and `anon key` values from the output into `VITE_SUPABASE_URL
 
 4. Create the tables using the SQL in the **Database Configuration** section of [DEPLOYMENT.md](./DEPLOYMENT.md). You can run the SQL in Supabase Studio at `http://localhost:54323` or add it to a local migration (`supabase migration new init_schema`), paste the SQL into the generated file, and run `supabase db reset`.
 
-> Note: This app uses GitHub OAuth. After `supabase init` creates `supabase/config.toml`, configure a GitHub OAuth app in the `auth.external.github` section, for example:
-> ```toml
-> [auth.external.github]
-> enabled = true
-> client_id = "env(GITHUB_CLIENT_ID)"
-> secret = "env(GITHUB_SECRET)"
-> ```
-> Set your GitHub OAuth app callback URL to `http://localhost:54321/auth/v1/callback`, and ensure `http://localhost:5173` is allowed in the `auth.site_url`/`auth.additional_redirect_urls` settings.
+5. **Configure authentication** (optional for GitHub OAuth):
+   - Email authentication is enabled by default in Supabase
+   - For GitHub OAuth: After `supabase init` creates `supabase/config.toml`, configure a GitHub OAuth app in the `auth.external.github` section:
+   ```toml
+   [auth.external.github]
+   enabled = true
+   client_id = "env(GITHUB_CLIENT_ID)"
+   secret = "env(GITHUB_SECRET)"
+   ```
+   - Set your GitHub OAuth app callback URL to `http://localhost:54321/auth/v1/callback`, and ensure `http://localhost:5173` is allowed in the `auth.site_url`/`auth.additional_redirect_urls` settings.
 
 ### Self-hosted Supabase (Postgres) on a Server
 
