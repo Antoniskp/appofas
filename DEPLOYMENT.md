@@ -119,7 +119,7 @@ supabase init
 supabase start
 ```
 
-3. Configure GitHub OAuth and your app URL in `supabase/config.toml` (for example, set `auth.site_url` and `auth.additional_redirect_urls` and add the GitHub provider):
+3. Configure GitHub OAuth and your app URL in `supabase/config.toml` (for example, set `auth.site_url` and `auth.additional_redirect_urls` and add the GitHub provider). Store `GITHUB_CLIENT_ID` and `GITHUB_SECRET` in `supabase/.env` (created by `supabase init`) or provide them via the environment for the Supabase containers.
 
 ```toml
 [auth]
@@ -132,8 +132,32 @@ client_id = "env(GITHUB_CLIENT_ID)"
 secret = "env(GITHUB_SECRET)"
 ```
 
-Store `GITHUB_CLIENT_ID` and `GITHUB_SECRET` in `supabase/.env` (created by `supabase init`) or provide them via the environment for the Supabase containers.
-4. Create the tables used by the app using the SQL that creates the `tasks` and `team_members` tables in the **Option A: Supabase Cloud** section above (Supabase Studio is available at `http://localhost:54323` on the server).
+4. Create the tables used by the app (Supabase Studio is available at `http://localhost:54323` on the server):
+
+```sql
+create table if not exists tasks (
+  id text primary key,
+  title text not null,
+  description text not null,
+  status text not null,
+  priority text not null,
+  assigneeId text,
+  assigneeName text,
+  assigneeAvatar text,
+  dueDate text,
+  createdAt text not null,
+  updatedAt text not null,
+  createdBy text not null
+);
+
+create table if not exists team_members (
+  id text primary key,
+  name text not null,
+  avatar text not null,
+  role text not null
+);
+```
+
 5. Run `supabase status` and use the API URL and anon key to set:
 
 ```bash
@@ -141,7 +165,7 @@ VITE_SUPABASE_URL=https://your-supabase-api-domain
 VITE_SUPABASE_ANON_KEY=your_supabase_anon_key
 ```
 
-Make sure the Supabase API URL is reachable by browsers. For production, prefer a dedicated subdomain reverse proxy (for example, `server_name supabase.your-domain.com` with `location / { proxy_pass http://127.0.0.1:54321; }`), terminate HTTPS using the [SSL/TLS Configuration](#ssltls-configuration) section, and restrict direct port access with firewall rules if you expose port `54321`.
+Make sure the Supabase API URL is reachable by browsers. For production, prefer a dedicated subdomain reverse proxy (for example, `server_name supabase.your-domain.com` with `location / { proxy_pass http://127.0.0.1:54321; }`). Terminate HTTPS using the [SSL/TLS Configuration](#ssltls-configuration) section and restrict direct port access with firewall rules if you expose port `54321`.
 
 ## Application Deployment
 
