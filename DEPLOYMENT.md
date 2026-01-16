@@ -120,6 +120,12 @@ cd appofas
 npm install
 ```
 
+You can also run the deployment script from the repository root to install dependencies and build the app in one step:
+
+```bash
+./deploy.sh
+```
+
 ### 3. Configure Environment Variables
 
 Create a `.env` file for environment-specific configuration:
