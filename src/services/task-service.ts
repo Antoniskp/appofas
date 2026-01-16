@@ -1,11 +1,20 @@
 import { Task, CreateTaskInput, UpdateTaskInput, TaskFilters } from '@/domain/task'
+import { supabase } from '@/services/supabase-client'
 
 const TASKS_KEY = 'tasks'
 
 export class TaskService {
   async getTasks(): Promise<Task[]> {
-    const tasks = await window.spark.kv.get<Task[]>(TASKS_KEY)
-    return tasks || []
+    const { data, error } = await supabase
+      .from(TASKS_KEY)
+      .select('*')
+      .order('createdAt', { ascending: false })
+
+    if (error) {
+      throw error
+    }
+
+    return (data ?? []) as Task[]
   }
 
   async getTaskById(id: string): Promise<Task | null> {
@@ -14,8 +23,6 @@ export class TaskService {
   }
 
   async createTask(input: CreateTaskInput, userId: string): Promise<Task> {
-    const tasks = await this.getTasks()
-    
     const newTask: Task = {
       id: this.generateId(),
       ...input,
@@ -24,36 +31,54 @@ export class TaskService {
       createdBy: userId
     }
 
-    tasks.push(newTask)
-    await window.spark.kv.set(TASKS_KEY, tasks)
-    
-    return newTask
+    const { data, error } = await supabase
+      .from(TASKS_KEY)
+      .insert(newTask)
+      .select()
+      .single()
+
+    if (error) {
+      throw error
+    }
+
+    return data as Task
   }
 
   async updateTask(input: UpdateTaskInput): Promise<Task> {
-    const tasks = await this.getTasks()
-    const index = tasks.findIndex(t => t.id === input.id)
-    
-    if (index === -1) {
-      throw new Error('Task not found')
-    }
-
-    const updatedTask = {
-      ...tasks[index],
-      ...input,
+    const updates: Partial<Task> = {
       updatedAt: new Date().toISOString()
     }
 
-    tasks[index] = updatedTask
-    await window.spark.kv.set(TASKS_KEY, tasks)
-    
-    return updatedTask
+    if (input.title !== undefined) updates.title = input.title
+    if (input.description !== undefined) updates.description = input.description
+    if (input.status !== undefined) updates.status = input.status
+    if (input.priority !== undefined) updates.priority = input.priority
+    if (input.assigneeId !== undefined) updates.assigneeId = input.assigneeId
+    if (input.dueDate !== undefined) updates.dueDate = input.dueDate
+
+    const { data, error } = await supabase
+      .from(TASKS_KEY)
+      .update(updates)
+      .eq('id', input.id)
+      .select()
+      .single()
+
+    if (error) {
+      throw error
+    }
+
+    return data as Task
   }
 
   async deleteTask(id: string): Promise<void> {
-    const tasks = await this.getTasks()
-    const filtered = tasks.filter(t => t.id !== id)
-    await window.spark.kv.set(TASKS_KEY, filtered)
+    const { error } = await supabase
+      .from(TASKS_KEY)
+      .delete()
+      .eq('id', id)
+
+    if (error) {
+      throw error
+    }
   }
 
   async filterTasks(filters: TaskFilters): Promise<Task[]> {
@@ -83,13 +108,14 @@ export class TaskService {
   }
 
   async bulkUpdateStatus(taskIds: string[], status: string): Promise<void> {
-    const tasks = await this.getTasks()
-    const updated = tasks.map(t => 
-      taskIds.includes(t.id) 
-        ? { ...t, status: status as any, updatedAt: new Date().toISOString() }
-        : t
-    )
-    await window.spark.kv.set(TASKS_KEY, updated)
+    const { error } = await supabase
+      .from(TASKS_KEY)
+      .update({ status, updatedAt: new Date().toISOString() })
+      .in('id', taskIds)
+
+    if (error) {
+      throw error
+    }
   }
 
   private generateId(): string {

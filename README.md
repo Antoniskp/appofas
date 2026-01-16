@@ -1,10 +1,10 @@
 # ✨ Appofas - Task Management Application
 
-A professional task management system with user authentication, role-based access, and enterprise-grade architecture built with React, TypeScript, and GitHub Spark.
+A professional task management system with user authentication, role-based access, and enterprise-grade architecture built with React, TypeScript, and Supabase.
 
 ## Features
 
-- User authentication with GitHub OAuth
+- User authentication with GitHub OAuth via Supabase
 - Task management (Create, Read, Update, Delete)
 - Multiple view layouts (Kanban board, List view, Calendar view)
 - Task filtering and search
@@ -26,12 +26,18 @@ cd appofas
 npm install
 ```
 
-3. Start the development server:
+3. Set the Supabase environment variables:
+```bash
+VITE_SUPABASE_URL=your_supabase_project_url
+VITE_SUPABASE_ANON_KEY=your_supabase_anon_key
+```
+
+4. Start the development server:
 ```bash
 npm run dev
 ```
 
-4. Open your browser at `http://localhost:5173`
+5. Open your browser at `http://localhost:5173`
 
 ### Build for Production
 
@@ -51,7 +57,7 @@ For detailed instructions on deploying this application to an Ubuntu VPS, includ
 - **UI Framework**: Tailwind CSS, Radix UI
 - **Build Tool**: Vite
 - **State Management**: TanStack Query
-- **Storage**: GitHub Spark KV
+- **Storage**: Supabase (PostgreSQL)
 - **Icons**: Phosphor Icons, Heroicons, Lucide React
 
 ## 📜 Available Scripts
@@ -66,9 +72,9 @@ For detailed instructions on deploying this application to an Ubuntu VPS, includ
 
 No problem! If you were just checking things out and don't need to keep this code:
 
-- Simply delete your Spark.
+- Simply delete your local copy.
 - Everything will be cleaned up — no traces left behind.
 
 ## 📄 License
 
-The Spark Template files and resources from GitHub are licensed under the terms of the MIT license, Copyright GitHub, Inc.
+Licensed under the terms of the MIT license.

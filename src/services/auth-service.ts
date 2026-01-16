@@ -1,37 +1,101 @@
 import { User, TeamMember } from '@/domain/user'
+import { supabase } from '@/services/supabase-client'
+import type { User as SupabaseUser } from '@supabase/supabase-js'
+
+const mapSupabaseUser = (user: SupabaseUser | null): User | null => {
+  if (!user) return null
+
+  const metadata = user.user_metadata ?? {}
+  const login = metadata.user_name
+    || metadata.preferred_username
+    || metadata.name
+    || metadata.full_name
+    || user.email?.split('@')[0]
+    || 'user'
+
+  return {
+    id: user.id,
+    login,
+    email: user.email ?? '',
+    avatarUrl: metadata.avatar_url || metadata.avatarUrl || '',
+    isOwner: metadata.role === 'owner'
+  }
+}
 
 export class AuthService {
   async getCurrentUser(): Promise<User | null> {
     try {
-      const userInfo = await window.spark.user()
-      if (!userInfo) return null
-      
-      return {
-        id: String(userInfo.id),
-        login: userInfo.login,
-        email: userInfo.email,
-        avatarUrl: userInfo.avatarUrl,
-        isOwner: userInfo.isOwner
+      const { data, error } = await supabase.auth.getUser()
+      if (error) {
+        return null
       }
+
+      return mapSupabaseUser(data.user)
     } catch (error) {
       return null
     }
   }
 
   async getTeamMembers(): Promise<TeamMember[]> {
-    const members = await window.spark.kv.get<TeamMember[]>('team-members')
-    return members || []
+    const { data, error } = await supabase
+      .from('team_members')
+      .select('*')
+      .order('name')
+
+    if (error) {
+      throw error
+    }
+
+    return (data ?? []) as TeamMember[]
   }
 
   async addTeamMember(member: Omit<TeamMember, 'id'>): Promise<TeamMember> {
-    const members = await this.getTeamMembers()
+    const id = typeof crypto !== 'undefined' && 'randomUUID' in crypto
+      ? crypto.randomUUID()
+      : `member_${Date.now()}`
+
     const newMember: TeamMember = {
-      id: `member_${Date.now()}`,
+      id,
       ...member
     }
-    members.push(newMember)
-    await window.spark.kv.set('team-members', members)
-    return newMember
+
+    const { data, error } = await supabase
+      .from('team_members')
+      .insert(newMember)
+      .select()
+      .single()
+
+    if (error) {
+      throw error
+    }
+
+    return data as TeamMember
+  }
+
+  async signInWithGitHub(): Promise<void> {
+    const { error } = await supabase.auth.signInWithOAuth({
+      provider: 'github',
+      options: {
+        redirectTo: window.location.origin
+      }
+    })
+
+    if (error) {
+      throw error
+    }
+  }
+
+  async signOut(): Promise<void> {
+    const { error } = await supabase.auth.signOut()
+    if (error) {
+      throw error
+    }
+  }
+
+  onAuthStateChange(callback: (user: User | null) => void) {
+    return supabase.auth.onAuthStateChange((_event, session) => {
+      callback(mapSupabaseUser(session?.user ?? null))
+    })
   }
 }
 
