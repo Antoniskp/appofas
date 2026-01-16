@@ -61,7 +61,7 @@ supabase status
 
 4. Create the tables using the SQL in the **Database Configuration** section of [DEPLOYMENT.md](./DEPLOYMENT.md).
 
-> Note: This app uses GitHub OAuth. For local sign-in, configure a GitHub OAuth app and add the credentials/redirect URL in `supabase/config.toml`.
+> Note: This app uses GitHub OAuth. After `supabase init` creates `supabase/config.toml`, configure a GitHub OAuth app and set the credentials/redirect URL there.
 
 ### Build for Production
 
