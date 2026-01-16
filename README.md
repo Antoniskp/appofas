@@ -49,7 +49,7 @@ The optimized production build will be in the `dist` directory.
 
 ## 📦 Deployment
 
-For detailed instructions on deploying this application to an Ubuntu VPS, including server setup, database configuration, and SSL/TLS setup, see [DEPLOYMENT.md](./DEPLOYMENT.md).
+For detailed instructions on deploying this application to an Ubuntu VPS, including server setup, database configuration, and SSL/TLS setup, see [DEPLOYMENT.md](./DEPLOYMENT.md). A helper script (`./deploy.sh`) is available to install dependencies and build the production bundle on the server.
 
 ## 🧠 Tech Stack
 
