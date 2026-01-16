@@ -203,12 +203,7 @@ export default function App() {
                     {user.email}
                   </DropdownMenuItem>
                   <DropdownMenuSeparator />
-                  <DropdownMenuItem
-                    onSelect={(event) => {
-                      event.preventDefault()
-                      handleSignOut()
-                    }}
-                  >
+                  <DropdownMenuItem onSelect={handleSignOut}>
                     <SignOut className="mr-2 h-4 w-4" />
                     Sign Out
                   </DropdownMenuItem>

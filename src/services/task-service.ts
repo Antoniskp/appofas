@@ -1,5 +1,6 @@
 import { Task, CreateTaskInput, UpdateTaskInput, TaskFilters } from '@/domain/task'
 import { supabase } from '@/services/supabase-client'
+import { v4 as uuidv4 } from 'uuid'
 
 const TASKS_KEY = 'tasks'
 
@@ -18,8 +19,17 @@ export class TaskService {
   }
 
   async getTaskById(id: string): Promise<Task | null> {
-    const tasks = await this.getTasks()
-    return tasks.find(t => t.id === id) || null
+    const { data, error } = await supabase
+      .from(TASKS_KEY)
+      .select('*')
+      .eq('id', id)
+      .maybeSingle()
+
+    if (error) {
+      throw error
+    }
+
+    return data as Task | null
   }
 
   async createTask(input: CreateTaskInput, userId: string): Promise<Task> {
@@ -45,16 +55,18 @@ export class TaskService {
   }
 
   async updateTask(input: UpdateTaskInput): Promise<Task> {
-    const updates: Partial<Task> = {
-      updatedAt: new Date().toISOString()
-    }
+    const updates = Object.fromEntries(
+      Object.entries({
+        title: input.title,
+        description: input.description,
+        status: input.status,
+        priority: input.priority,
+        assigneeId: input.assigneeId,
+        dueDate: input.dueDate
+      }).filter(([, value]) => value !== undefined)
+    ) as Partial<Task>
 
-    if (input.title !== undefined) updates.title = input.title
-    if (input.description !== undefined) updates.description = input.description
-    if (input.status !== undefined) updates.status = input.status
-    if (input.priority !== undefined) updates.priority = input.priority
-    if (input.assigneeId !== undefined) updates.assigneeId = input.assigneeId
-    if (input.dueDate !== undefined) updates.dueDate = input.dueDate
+    updates.updatedAt = new Date().toISOString()
 
     const { data, error } = await supabase
       .from(TASKS_KEY)
@@ -82,25 +94,35 @@ export class TaskService {
   }
 
   async filterTasks(filters: TaskFilters): Promise<Task[]> {
-    let tasks = await this.getTasks()
+    let query = supabase
+      .from(TASKS_KEY)
+      .select('*')
 
     if (filters.status && filters.status.length > 0) {
-      tasks = tasks.filter(t => filters.status!.includes(t.status))
+      query = query.in('status', filters.status)
     }
 
     if (filters.priority && filters.priority.length > 0) {
-      tasks = tasks.filter(t => filters.priority!.includes(t.priority))
+      query = query.in('priority', filters.priority)
     }
 
     if (filters.assigneeId && filters.assigneeId.length > 0) {
-      tasks = tasks.filter(t => t.assigneeId && filters.assigneeId!.includes(t.assigneeId))
+      query = query.in('assigneeId', filters.assigneeId)
     }
 
+    const { data, error } = await query.order('createdAt', { ascending: false })
+
+    if (error) {
+      throw error
+    }
+
+    let tasks = (data ?? []) as Task[]
+
     if (filters.search && filters.search.trim()) {
-      const search = filters.search.toLowerCase()
-      tasks = tasks.filter(t => 
-        t.title.toLowerCase().includes(search) ||
-        t.description.toLowerCase().includes(search)
+      const search = filters.search.trim().toLowerCase()
+      tasks = tasks.filter(task =>
+        task.title.toLowerCase().includes(search)
+        || task.description.toLowerCase().includes(search)
       )
     }
 
@@ -119,7 +141,7 @@ export class TaskService {
   }
 
   private generateId(): string {
-    return `task_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`
+    return uuidv4()
   }
 }
 

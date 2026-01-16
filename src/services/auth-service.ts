@@ -1,17 +1,24 @@
 import { User, TeamMember } from '@/domain/user'
 import { supabase } from '@/services/supabase-client'
 import type { User as SupabaseUser } from '@supabase/supabase-js'
+import { v4 as uuidv4 } from 'uuid'
 
+/**
+ * Map Supabase user metadata to the app user model.
+ * Login falls back in priority order: user_name → preferred_username → name → full_name → email prefix.
+ */
 const mapSupabaseUser = (user: SupabaseUser | null): User | null => {
   if (!user) return null
 
   const metadata = user.user_metadata ?? {}
-  const login = metadata.user_name
-    || metadata.preferred_username
-    || metadata.name
-    || metadata.full_name
-    || user.email?.split('@')[0]
-    || 'user'
+  const loginCandidates = [
+    metadata.user_name,
+    metadata.preferred_username,
+    metadata.name,
+    metadata.full_name,
+    user.email?.split('@')[0]
+  ]
+  const login = loginCandidates.find((value) => typeof value === 'string' && value.length > 0) || 'user'
 
   return {
     id: user.id,
@@ -50,12 +57,8 @@ export class AuthService {
   }
 
   async addTeamMember(member: Omit<TeamMember, 'id'>): Promise<TeamMember> {
-    const id = typeof crypto !== 'undefined' && 'randomUUID' in crypto
-      ? crypto.randomUUID()
-      : `member_${Date.now()}`
-
     const newMember: TeamMember = {
-      id,
+      id: uuidv4(),
       ...member
     }
 
