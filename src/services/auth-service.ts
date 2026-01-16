@@ -88,6 +88,34 @@ export class AuthService {
     }
   }
 
+  async signUpWithEmail(email: string, password: string, fullName: string): Promise<void> {
+    const { error } = await supabase.auth.signUp({
+      email,
+      password,
+      options: {
+        data: {
+          full_name: fullName,
+          name: fullName
+        }
+      }
+    })
+
+    if (error) {
+      throw error
+    }
+  }
+
+  async signInWithEmail(email: string, password: string): Promise<void> {
+    const { error } = await supabase.auth.signInWithPassword({
+      email,
+      password
+    })
+
+    if (error) {
+      throw error
+    }
+  }
+
   async signOut(): Promise<void> {
     const { error } = await supabase.auth.signOut()
     if (error) {
