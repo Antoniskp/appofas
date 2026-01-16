@@ -119,7 +119,18 @@ supabase init
 supabase start
 ```
 
-3. Configure GitHub OAuth and your app URL in `supabase/config.toml` (for example, set `auth.site_url` and `auth.additional_redirect_urls` and add the GitHub provider).
+3. Configure GitHub OAuth and your app URL in `supabase/config.toml` (for example, set `auth.site_url` and `auth.additional_redirect_urls` and add the GitHub provider):
+
+```toml
+[auth]
+site_url = "https://app.your-domain.com"
+additional_redirect_urls = ["https://app.your-domain.com"]
+
+[auth.external.github]
+enabled = true
+client_id = "env(GITHUB_CLIENT_ID)"
+secret = "env(GITHUB_SECRET)"
+```
 4. Create the tables used by the app using the SQL above (Supabase Studio is available at `http://localhost:54323` on the server).
 5. Run `supabase status` and use the API URL and anon key to set:
 
@@ -128,7 +139,7 @@ VITE_SUPABASE_URL=https://your-supabase-api-domain
 VITE_SUPABASE_ANON_KEY=your_supabase_anon_key
 ```
 
-Make sure the Supabase API URL is reachable by browsers (use a reverse proxy or firewall rules if you are not exposing the default ports).
+Make sure the Supabase API URL is reachable by browsers. You can expose port `54321` directly or reverse proxy it (for example, an Nginx `location /` that `proxy_pass http://127.0.0.1:54321;`).
 
 ## Application Deployment
 
