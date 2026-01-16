@@ -47,7 +47,7 @@ You can run Supabase entirely on your machine without creating a project on supa
 ```bash
 npm install -g supabase
 ```
-Other install options (Homebrew/Scoop) are listed in the [Supabase CLI docs](https://supabase.com/docs/guides/cli).
+Other install options (Homebrew/Scoop) and Node.js requirements are listed in the [Supabase CLI docs](https://supabase.com/docs/guides/cli).
 
 2. Initialize and start the local stack:
 ```bash
@@ -61,7 +61,7 @@ supabase status
 ```
 Copy the `API URL` and `anon key` values from the output into `VITE_SUPABASE_URL` and `VITE_SUPABASE_ANON_KEY`.
 
-4. Create the tables using the SQL in the **Database Configuration** section of [DEPLOYMENT.md](./DEPLOYMENT.md). You can run the SQL in Supabase Studio at `http://localhost:54323` or via the CLI.
+4. Create the tables using the SQL in the **Database Configuration** section of [DEPLOYMENT.md](./DEPLOYMENT.md). You can run the SQL in Supabase Studio at `http://localhost:54323` or add it to a local migration and run `supabase db reset`.
 
 > Note: This app uses GitHub OAuth. After `supabase init` creates `supabase/config.toml`, configure a GitHub OAuth app and set the credentials there. Use `http://localhost:5173` as the redirect URL for local sign-in.
 
