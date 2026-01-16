@@ -59,8 +59,9 @@ supabase start
 ```bash
 supabase status
 ```
+Copy the `API URL` and `anon key` values from the output into `VITE_SUPABASE_URL` and `VITE_SUPABASE_ANON_KEY`.
 
-4. Create the tables using the SQL in the **Database Configuration** section of [DEPLOYMENT.md](./DEPLOYMENT.md).
+4. Create the tables using the SQL in the **Database Configuration** section of [DEPLOYMENT.md](./DEPLOYMENT.md). You can run the SQL in Supabase Studio at `http://localhost:54323` or via the CLI.
 
 > Note: This app uses GitHub OAuth. After `supabase init` creates `supabase/config.toml`, configure a GitHub OAuth app and set the credentials there. Use `http://localhost:5173` as the redirect URL for local sign-in.
 
