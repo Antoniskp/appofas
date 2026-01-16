@@ -22,4 +22,4 @@ fi
 
 npm run build
 
-echo "Deployment build complete. Serve the dist/ directory with your web server."
+echo "Deployment build complete. Serve the build output directory (default: dist/) with your web server."
