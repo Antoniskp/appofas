@@ -39,6 +39,30 @@ npm run dev
 
 5. Open your browser at `http://localhost:5173`
 
+### Local Supabase (No Supabase Dashboard Required)
+
+You can run Supabase entirely on your machine without creating a project on supabase.com.
+
+1. Install the Supabase CLI:
+```bash
+npm install -g supabase
+```
+
+2. Initialize and start the local stack:
+```bash
+supabase init
+supabase start
+```
+
+3. Copy the local API URL and anon key into your `.env` file:
+```bash
+supabase status
+```
+
+4. Create the tables using the SQL in the **Database Configuration** section of [DEPLOYMENT.md](./DEPLOYMENT.md).
+
+> Note: This app uses GitHub OAuth. For local sign-in, configure a GitHub OAuth app and add the credentials/redirect URL in `supabase/config.toml`.
+
 ### Build for Production
 
 ```bash
