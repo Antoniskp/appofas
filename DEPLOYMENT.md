@@ -61,9 +61,9 @@ sudo usermod -aG sudo appofas  # Optional: if you need sudo access
 
 ## Database Configuration
 
-This application uses Supabase (PostgreSQL) for authentication and data storage.
+This application uses Supabase (PostgreSQL + Auth + REST) for authentication and data storage. You can use Supabase Cloud or self-host the stack on your VPS.
 
-### Supabase Setup
+### Option A: Supabase Cloud
 
 1. Create a Supabase project at https://supabase.com.
 2. Enable the GitHub OAuth provider in **Authentication → Providers**.
@@ -99,6 +99,78 @@ create table if not exists team_members (
 VITE_SUPABASE_URL=your_supabase_project_url
 VITE_SUPABASE_ANON_KEY=your_supabase_anon_key
 ```
+
+### Option B: Self-hosted Supabase (Postgres)
+
+Use the Supabase CLI to run the Docker stack on your server and point the frontend to the public API URL.
+
+1. Install Docker and the Supabase CLI using the Ubuntu/Debian commands below. For other platforms, see the Docker and Supabase CLI docs. To avoid global installs, use `npx supabase@latest` or download the CLI binary from the docs.
+
+```bash
+sudo apt install -y docker.io docker-compose-plugin
+sudo usermod -aG docker $USER
+# log out and back in (or run `newgrp docker`) for group changes to take effect
+# note: docker group membership grants root-level privileges; for production consider rootless Docker (https://docs.docker.com/engine/security/rootless/)
+```
+
+If you want a global `supabase` binary, run `npm install -g supabase` (ensure your npm global prefix has safe permissions). Otherwise, prefix commands below with `npx supabase@latest`.
+
+2. Initialize and start the stack from the repository root:
+
+```bash
+supabase init
+supabase start
+```
+
+3. Configure GitHub OAuth and your app URL in `supabase/config.toml` (create a GitHub OAuth app first, then set `auth.site_url` and `auth.additional_redirect_urls` and add the GitHub provider). Store `GITHUB_CLIENT_ID` and `GITHUB_SECRET` in `supabase/.env` (created by `supabase init` and loaded automatically when `supabase start` runs) or provide them via the environment for the Supabase containers.
+
+```toml
+[auth]
+site_url = "https://app.your-domain.com"
+additional_redirect_urls = ["https://www.your-domain.com"]
+
+[auth.external.github]
+enabled = true
+client_id = "env(GITHUB_CLIENT_ID)"
+secret = "env(GITHUB_SECRET)"
+```
+
+4. Create the tables used by the app (Supabase Studio is available at `http://localhost:54323` on the server):
+
+```sql
+create table if not exists tasks (
+  id text primary key,
+  title text not null,
+  description text not null,
+  status text not null,
+  priority text not null,
+  assigneeId text,
+  assigneeName text,
+  assigneeAvatar text,
+  dueDate text,
+  createdAt text not null,
+  updatedAt text not null,
+  createdBy text not null
+);
+
+create table if not exists team_members (
+  id text primary key,
+  name text not null,
+  avatar text not null,
+  role text not null
+);
+```
+
+5. Run `supabase status` and use the API URL and anon key to set:
+
+```bash
+VITE_SUPABASE_URL=https://supabase.your-domain.com
+VITE_SUPABASE_ANON_KEY=your_supabase_anon_key
+```
+
+If `supabase status` reports localhost URLs, replace them with your public domain once your reverse proxy is configured.
+
+Make sure the Supabase API URL is reachable by browsers. For production, prefer a dedicated subdomain reverse proxy (for example, `server_name supabase.your-domain.com` with `location / { proxy_pass http://127.0.0.1:54321; }`). Terminate HTTPS using the [SSL/TLS Configuration](#ssltls-configuration) section. Restrict direct port access with firewall rules if you expose port `54321`.
 
 ## Application Deployment
 
