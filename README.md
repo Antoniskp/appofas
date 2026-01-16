@@ -72,6 +72,16 @@ Copy the `API URL` and `anon key` values from the output into `VITE_SUPABASE_URL
 > ```
 > Set your GitHub OAuth app callback URL to `http://localhost:54321/auth/v1/callback`, and ensure `http://localhost:5173` is allowed in the `auth.site_url`/`auth.additional_redirect_urls` settings.
 
+### Self-hosted Supabase (Postgres) on a Server
+
+If you prefer not to use Supabase Cloud, you can run the Supabase Docker stack (PostgreSQL + Auth + REST) alongside the app on your own server. The deployment guide includes full instructions, but the short version is:
+
+1. Install Docker and the Supabase CLI on the server.
+2. From the repository root: `supabase init`, then update `supabase/config.toml` with GitHub OAuth settings and `auth.site_url` for your domain.
+3. Run `supabase start` to launch the services.
+4. Use `supabase status` to copy the public API URL and anon key into `VITE_SUPABASE_URL` and `VITE_SUPABASE_ANON_KEY`.
+5. Run the schema SQL from [DEPLOYMENT.md](./DEPLOYMENT.md) in Supabase Studio or a migration.
+
 ### Build for Production
 
 ```bash

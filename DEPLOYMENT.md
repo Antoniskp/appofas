@@ -61,9 +61,9 @@ sudo usermod -aG sudo appofas  # Optional: if you need sudo access
 
 ## Database Configuration
 
-This application uses Supabase (PostgreSQL) for authentication and data storage.
+This application uses Supabase (PostgreSQL + Auth + REST) for authentication and data storage. You can use Supabase Cloud or self-host the stack on your VPS.
 
-### Supabase Setup
+### Option A: Supabase Cloud
 
 1. Create a Supabase project at https://supabase.com.
 2. Enable the GitHub OAuth provider in **Authentication → Providers**.
@@ -99,6 +99,36 @@ create table if not exists team_members (
 VITE_SUPABASE_URL=your_supabase_project_url
 VITE_SUPABASE_ANON_KEY=your_supabase_anon_key
 ```
+
+### Option B: Self-hosted Supabase (Postgres)
+
+Use the Supabase CLI to run the Docker stack on your server and point the frontend to the public API URL.
+
+1. Install Docker and the Supabase CLI:
+
+```bash
+sudo apt install -y docker.io docker-compose-plugin
+sudo usermod -aG docker $USER
+npm install -g supabase
+```
+
+2. Initialize and start the stack from the repository root:
+
+```bash
+supabase init
+supabase start
+```
+
+3. Configure GitHub OAuth and your app URL in `supabase/config.toml` (for example, set `auth.site_url` and `auth.additional_redirect_urls` and add the GitHub provider).
+4. Create the tables used by the app using the SQL above (Supabase Studio is available at `http://localhost:54323` on the server).
+5. Run `supabase status` and use the API URL and anon key to set:
+
+```bash
+VITE_SUPABASE_URL=https://your-supabase-api-domain
+VITE_SUPABASE_ANON_KEY=your_supabase_anon_key
+```
+
+Make sure the Supabase API URL is reachable by browsers (use a reverse proxy or firewall rules if you are not exposing the default ports).
 
 ## Application Deployment
 
