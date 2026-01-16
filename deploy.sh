@@ -5,7 +5,7 @@ ROOT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 cd "$ROOT_DIR"
 
 if ! command -v npm >/dev/null 2>&1; then
-  echo "npm is required. Install Node.js 20.x before running this script." >&2
+  echo "npm is required. Install Node.js 20.x (or later) before running this script." >&2
   exit 1
 fi
 
