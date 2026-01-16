@@ -104,7 +104,7 @@ VITE_SUPABASE_ANON_KEY=your_supabase_anon_key
 
 Use the Supabase CLI to run the Docker stack on your server and point the frontend to the public API URL.
 
-1. Install Docker and the Supabase CLI:
+1. Install Docker and the Supabase CLI (for other platforms, see the Docker and Supabase CLI docs):
 
 ```bash
 sudo apt install -y docker.io docker-compose-plugin
@@ -131,7 +131,7 @@ enabled = true
 client_id = "env(GITHUB_CLIENT_ID)"
 secret = "env(GITHUB_SECRET)"
 ```
-4. Create the tables used by the app using the SQL above (Supabase Studio is available at `http://localhost:54323` on the server).
+4. Create the tables used by the app using the schema SQL in the **Option A: Supabase Cloud** section above (Supabase Studio is available at `http://localhost:54323` on the server).
 5. Run `supabase status` and use the API URL and anon key to set:
 
 ```bash
@@ -139,7 +139,7 @@ VITE_SUPABASE_URL=https://your-supabase-api-domain
 VITE_SUPABASE_ANON_KEY=your_supabase_anon_key
 ```
 
-Make sure the Supabase API URL is reachable by browsers. You can expose port `54321` directly or reverse proxy it (for example, an Nginx `location /` that `proxy_pass http://127.0.0.1:54321;`).
+Make sure the Supabase API URL is reachable by browsers. For production, prefer a reverse proxy (for example, an Nginx `location /` that `proxy_pass http://127.0.0.1:54321;`) and restrict direct port access with firewall rules if you expose port `54321`.
 
 ## Application Deployment
 
