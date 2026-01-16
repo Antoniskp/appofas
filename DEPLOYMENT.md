@@ -61,58 +61,43 @@ sudo usermod -aG sudo appofas  # Optional: if you need sudo access
 
 ## Database Configuration
 
-This application uses GitHub Spark's KV (Key-Value) store for data persistence, which is built into the application. No separate database installation is required.
+This application uses Supabase (PostgreSQL) for authentication and data storage.
 
-### Spark KV Storage
+### Supabase Setup
 
-The application stores data using `window.spark.kv` which persists data locally in the browser. For production deployments, consider:
+1. Create a Supabase project at https://supabase.com.
+2. Enable the GitHub OAuth provider in **Authentication → Providers**.
+3. Create the tables used by the app:
 
-**Option 1: Use as-is (Browser Storage)**
-- Data is stored in the user's browser
-- No server-side database needed
-- Suitable for single-user or small team deployments
+```sql
+create table if not exists tasks (
+  id text primary key,
+  title text not null,
+  description text not null,
+  status text not null,
+  priority text not null,
+  assigneeId text,
+  assigneeName text,
+  assigneeAvatar text,
+  dueDate text,
+  createdAt text not null,
+  updatedAt text not null,
+  createdBy text not null
+);
 
-**Option 2: Add Backend Database (Future Enhancement)**
-
-If you need centralized data storage, you can add a backend API with one of these databases:
-
-#### PostgreSQL (Recommended for Production)
-
-```bash
-# Install PostgreSQL
-sudo apt install -y postgresql postgresql-contrib
-
-# Start and enable PostgreSQL
-sudo systemctl start postgresql
-sudo systemctl enable postgresql
-
-# Create database and user
-sudo -u postgres psql << EOF
-CREATE DATABASE appofas;
-CREATE USER appofas_user WITH ENCRYPTED PASSWORD 'your_secure_password';
-GRANT ALL PRIVILEGES ON DATABASE appofas TO appofas_user;
-\q
-EOF
+create table if not exists team_members (
+  id text primary key,
+  name text not null,
+  avatar text not null,
+  role text not null
+);
 ```
 
-#### MongoDB (Alternative)
+4. Configure environment variables on your server (or in a `.env` file):
 
 ```bash
-# Import MongoDB public key
-curl -fsSL https://www.mongodb.org/static/pgp/server-7.0.asc | \
-   sudo gpg -o /usr/share/keyrings/mongodb-server-7.0.gpg --dearmor
-
-# Add MongoDB repository
-echo "deb [ arch=amd64,arm64 signed-by=/usr/share/keyrings/mongodb-server-7.0.gpg ] https://repo.mongodb.org/apt/ubuntu jammy/mongodb-org/7.0 multiverse" | \
-   sudo tee /etc/apt/sources.list.d/mongodb-org-7.0.list
-
-# Install MongoDB
-sudo apt update
-sudo apt install -y mongodb-org
-
-# Start and enable MongoDB
-sudo systemctl start mongod
-sudo systemctl enable mongod
+VITE_SUPABASE_URL=your_supabase_project_url
+VITE_SUPABASE_ANON_KEY=your_supabase_anon_key
 ```
 
 ## Application Deployment

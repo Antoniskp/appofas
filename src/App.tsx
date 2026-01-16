@@ -31,8 +31,22 @@ export default function App() {
 
   useEffect(() => {
     loadUser()
-    loadTasks()
+
+    const { data: { subscription } } = authService.onAuthStateChange((currentUser) => {
+      setUser(currentUser)
+    })
+
+    return () => subscription.unsubscribe()
   }, [])
+
+  useEffect(() => {
+    if (user) {
+      loadTasks()
+    } else {
+      setTasks([])
+      setFilteredTasks([])
+    }
+  }, [user])
 
   useEffect(() => {
     applyFilters()
@@ -115,6 +129,23 @@ export default function App() {
     setIsFormOpen(true)
   }
 
+  const handleSignIn = async () => {
+    try {
+      await authService.signInWithGitHub()
+    } catch (error) {
+      toast.error('Failed to start GitHub sign-in')
+    }
+  }
+
+  const handleSignOut = async () => {
+    try {
+      await authService.signOut()
+      setUser(null)
+    } catch (error) {
+      toast.error('Failed to sign out')
+    }
+  }
+
   const handleCloseForm = () => {
     setIsFormOpen(false)
     setEditingTask(null)
@@ -129,11 +160,14 @@ export default function App() {
           </div>
           <h1 className="text-3xl font-bold">TaskFlow</h1>
           <p className="text-muted-foreground">
-            Please authenticate with GitHub to access the application
+            Please sign in with GitHub to access the application
           </p>
           <p className="text-sm text-muted-foreground">
-            This application uses GitHub authentication for secure access
+            Authentication is powered by Supabase and PostgreSQL
           </p>
+          <Button onClick={handleSignIn} className="w-full">
+            Sign in with GitHub
+          </Button>
         </div>
       </div>
     )
@@ -169,7 +203,7 @@ export default function App() {
                     {user.email}
                   </DropdownMenuItem>
                   <DropdownMenuSeparator />
-                  <DropdownMenuItem disabled>
+                  <DropdownMenuItem onSelect={handleSignOut}>
                     <SignOut className="mr-2 h-4 w-4" />
                     Sign Out
                   </DropdownMenuItem>
