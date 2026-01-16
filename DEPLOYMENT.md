@@ -104,7 +104,7 @@ VITE_SUPABASE_ANON_KEY=your_supabase_anon_key
 
 Use the Supabase CLI to run the Docker stack on your server and point the frontend to the public API URL.
 
-1. Install Docker and the Supabase CLI (Ubuntu/Debian example below; for other platforms, see the Docker and Supabase CLI docs):
+1. Install Docker and the Supabase CLI (Ubuntu/Debian example below; for other platforms, see the Docker and Supabase CLI docs). If you prefer not to install globally, use `npx supabase@latest` or download the CLI binary from the docs.
 
 ```bash
 sudo apt install -y docker.io docker-compose-plugin
@@ -131,6 +131,8 @@ enabled = true
 client_id = "env(GITHUB_CLIENT_ID)"
 secret = "env(GITHUB_SECRET)"
 ```
+
+Store `GITHUB_CLIENT_ID` and `GITHUB_SECRET` in `supabase/.env` (created by `supabase init`) or provide them via the environment for the Supabase containers.
 4. Create the tables used by the app using the SQL that creates the `tasks` and `team_members` tables in the **Option A: Supabase Cloud** section above (Supabase Studio is available at `http://localhost:54323` on the server).
 5. Run `supabase status` and use the API URL and anon key to set:
 
@@ -139,7 +141,7 @@ VITE_SUPABASE_URL=https://your-supabase-api-domain
 VITE_SUPABASE_ANON_KEY=your_supabase_anon_key
 ```
 
-Make sure the Supabase API URL is reachable by browsers. For production, prefer a dedicated subdomain reverse proxy (for example, `server_name supabase.your-domain.com` with `location / { proxy_pass http://127.0.0.1:54321; }`) and restrict direct port access with firewall rules if you expose port `54321`.
+Make sure the Supabase API URL is reachable by browsers. For production, prefer a dedicated subdomain reverse proxy (for example, `server_name supabase.your-domain.com` with `location / { proxy_pass http://127.0.0.1:54321; }`), terminate HTTPS using the [SSL/TLS Configuration](#ssltls-configuration) section, and restrict direct port access with firewall rules if you expose port `54321`.
 
 ## Application Deployment
 
