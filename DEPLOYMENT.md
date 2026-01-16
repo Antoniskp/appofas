@@ -104,14 +104,15 @@ VITE_SUPABASE_ANON_KEY=your_supabase_anon_key
 
 Use the Supabase CLI to run the Docker stack on your server and point the frontend to the public API URL.
 
-1. Install Docker and the Supabase CLI using the Ubuntu/Debian commands below. For other platforms, see the Docker and Supabase CLI docs. To avoid global installs (and the associated permission/security considerations), use `npx supabase@latest` or download the CLI binary from the docs.
+1. Install Docker and the Supabase CLI using the Ubuntu/Debian commands below. For other platforms, see the Docker and Supabase CLI docs. To avoid global installs, use `npx supabase@latest` or download the CLI binary from the docs.
 
 ```bash
 sudo apt install -y docker.io docker-compose-plugin
 sudo usermod -aG docker $USER
 # log out and back in (or run `newgrp docker`) for group changes to take effect
-npm install -g supabase
 ```
+
+If you want a global `supabase` binary, run `npm install -g supabase` (ensure your npm global prefix has safe permissions). Otherwise, prefix commands below with `npx supabase@latest`.
 
 2. Initialize and start the stack from the repository root:
 
@@ -120,7 +121,7 @@ supabase init
 supabase start
 ```
 
-3. Configure GitHub OAuth and your app URL in `supabase/config.toml` (for example, set `auth.site_url` and `auth.additional_redirect_urls` and add the GitHub provider). Store `GITHUB_CLIENT_ID` and `GITHUB_SECRET` in `supabase/.env` (created by `supabase init`) or provide them via the environment for the Supabase containers.
+3. Configure GitHub OAuth and your app URL in `supabase/config.toml` (for example, set `auth.site_url` and `auth.additional_redirect_urls` and add the GitHub provider). Store `GITHUB_CLIENT_ID` and `GITHUB_SECRET` in `supabase/.env` (created by `supabase init` and loaded automatically when `supabase start` runs) or provide them via the environment for the Supabase containers.
 
 ```toml
 [auth]
