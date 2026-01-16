@@ -110,7 +110,7 @@ Use the Supabase CLI to run the Docker stack on your server and point the fronte
 sudo apt install -y docker.io docker-compose-plugin
 sudo usermod -aG docker $USER
 # log out and back in (or run `newgrp docker`) for group changes to take effect
-# note: docker group membership grants root-level privileges; use rootless Docker if you need stricter isolation
+# note: docker group membership grants root-level privileges; for production consider rootless Docker (https://docs.docker.com/engine/security/rootless/)
 ```
 
 If you want a global `supabase` binary, run `npm install -g supabase` (ensure your npm global prefix has safe permissions). Otherwise, prefix commands below with `npx supabase@latest`.
@@ -167,6 +167,8 @@ create table if not exists team_members (
 VITE_SUPABASE_URL=https://supabase.your-domain.com
 VITE_SUPABASE_ANON_KEY=your_supabase_anon_key
 ```
+
+If `supabase status` reports localhost URLs, replace them with your public domain once your reverse proxy is configured.
 
 Make sure the Supabase API URL is reachable by browsers. For production, prefer a dedicated subdomain reverse proxy (for example, `server_name supabase.your-domain.com` with `location / { proxy_pass http://127.0.0.1:54321; }`). Terminate HTTPS using the [SSL/TLS Configuration](#ssltls-configuration) section. Restrict direct port access with firewall rules if you expose port `54321`.
 
