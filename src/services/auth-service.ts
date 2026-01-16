@@ -94,6 +94,8 @@ export class AuthService {
       password,
       options: {
         data: {
+          // Store both 'name' and 'full_name' for compatibility with mapSupabaseUser
+          // which checks both fields when determining the user's login display name
           full_name: fullName,
           name: fullName
         }
