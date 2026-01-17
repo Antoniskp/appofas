@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from 'react'
+import { useState, useEffect, useCallback, useRef } from 'react'
 import { Task, TaskStatus, CreateTaskInput, UpdateTaskInput, TaskFilters } from '@/domain/task'
 import { User } from '@/domain/user'
 import { taskService } from '@/services/task-service'
@@ -49,7 +49,14 @@ export default function App() {
   const [searchQuery, setSearchQuery] = useState('')
   const [isLoading, setIsLoading] = useState(true)
   const [isAuthLoading, setIsAuthLoading] = useState(true)
+  const hasResolvedAuth = useRef(false)
   const showTaskForm = currentPage === 'tasks' && isFormOpen
+
+  const finishAuthLoading = useCallback(() => {
+    if (hasResolvedAuth.current) return
+    hasResolvedAuth.current = true
+    setIsAuthLoading(false)
+  }, [])
 
   const resetTaskForm = () => {
     setIsFormOpen(false)
@@ -64,20 +71,20 @@ export default function App() {
       console.error('Failed to restore session', error)
       toast.error('Unable to restore your session. Please sign in again.')
     } finally {
-      setIsAuthLoading(false)
+      finishAuthLoading()
     }
-  }, [])
+  }, [finishAuthLoading])
 
   useEffect(() => {
     loadUser()
 
     const { data: { subscription } } = authService.onAuthStateChange((currentUser) => {
       setUser(currentUser)
-      setIsAuthLoading((current) => (current ? false : current))
+      finishAuthLoading()
     })
 
     return () => subscription.unsubscribe()
-  }, [loadUser])
+  }, [loadUser, finishAuthLoading])
 
   useEffect(() => {
     if (user) {
