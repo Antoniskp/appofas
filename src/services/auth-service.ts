@@ -35,7 +35,10 @@ export class AuthService {
    */
   private getRedirectTarget() {
     const { pathname, search, hash, origin } = window.location
-    const safePath = pathname.startsWith('/') ? pathname : '/'
+    const basePath = import.meta.env.BASE_URL ?? '/'
+    const normalizedBase = basePath !== '/' && basePath.endsWith('/') ? basePath.slice(0, -1) : basePath
+    const candidatePath = pathname.startsWith('/') ? pathname : '/'
+    const safePath = candidatePath.startsWith(normalizedBase) ? candidatePath : normalizedBase
     return `${origin}${safePath}${search}${hash}`
   }
   async getCurrentUser(): Promise<User | null> {
