@@ -88,6 +88,25 @@ create table if not exists tasks (
   createdBy text not null
 );
 
+create table if not exists articles (
+  id text primary key,
+  title text not null,
+  subtitle text,
+  summary text,
+  content text,
+  authorName text,
+  section text,
+  location text,
+  tags text[] not null default '{}',
+  coverImageUrl text,
+  visibility text not null,
+  isNews boolean not null default false,
+  publishedAt text,
+  createdAt text not null,
+  updatedAt text not null,
+  createdBy text not null
+);
+
 create table if not exists team_members (
   id text primary key,
   name text not null,
@@ -157,6 +176,25 @@ create table if not exists tasks (
   assigneeName text,
   assigneeAvatar text,
   dueDate text,
+  createdAt text not null,
+  updatedAt text not null,
+  createdBy text not null
+);
+
+create table if not exists articles (
+  id text primary key,
+  title text not null,
+  subtitle text,
+  summary text,
+  content text,
+  authorName text,
+  section text,
+  location text,
+  tags text[] not null default '{}',
+  coverImageUrl text,
+  visibility text not null,
+  isNews boolean not null default false,
+  publishedAt text,
   createdAt text not null,
   updatedAt text not null,
   createdBy text not null
