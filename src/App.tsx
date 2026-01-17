@@ -44,6 +44,7 @@ export default function App() {
   const [filters, setFilters] = useState<TaskFilters>({})
   const [searchQuery, setSearchQuery] = useState('')
   const [isLoading, setIsLoading] = useState(true)
+  const showTaskForm = currentPage === 'tasks' && isFormOpen
 
   const resetTaskForm = () => {
     setIsFormOpen(false)
@@ -179,11 +180,7 @@ export default function App() {
   const navigate = (page: AppPage) => {
     if (page === currentPage) return
     const nextPath = page === 'profile' ? '/profile' : '/'
-    try {
-      window.history.pushState({}, '', nextPath)
-    } catch (error) {
-      window.location.assign(nextPath)
-    }
+    window.history.pushState({}, '', nextPath)
     setCurrentPage(page)
     resetTaskForm()
   }
@@ -365,7 +362,7 @@ export default function App() {
       </main>
 
       <TaskFormDialog
-        open={currentPage === 'tasks' && isFormOpen}
+        open={showTaskForm}
         onClose={handleCloseForm}
         onSubmit={editingTask ? handleUpdateTask : handleCreateTask}
         task={editingTask}
