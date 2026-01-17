@@ -32,13 +32,14 @@ const mapSupabaseUser = (user: SupabaseUser | null): User | null => {
 export class AuthService {
   /**
    * Build a same-origin redirect URL for OAuth flows, preserving the current route.
+   * Falls back to the app base path if the current path is outside the configured base.
    */
   private getRedirectTarget() {
     const { pathname, search, hash, origin } = window.location
     const basePath = import.meta.env.BASE_URL ?? '/'
     const normalizedBase = basePath !== '/' && basePath.endsWith('/') ? basePath.slice(0, -1) : basePath
-    const candidatePath = pathname.startsWith('/') ? pathname : '/'
-    const safePath = candidatePath.startsWith(normalizedBase) ? candidatePath : normalizedBase
+    const normalizedPath = pathname.startsWith('/') ? pathname : '/'
+    const safePath = normalizedPath.startsWith(normalizedBase) ? normalizedPath : normalizedBase
     return `${origin}${safePath}${search}${hash}`
   }
   async getCurrentUser(): Promise<User | null> {
