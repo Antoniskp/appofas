@@ -61,7 +61,7 @@ export default function App() {
       const currentUser = await authService.getCurrentUser()
       setUser(currentUser)
     } catch {
-      toast.error('Failed to restore session')
+      toast.error('Unable to restore your session. Please sign in again.')
     } finally {
       setIsAuthLoading(false)
     }
@@ -72,7 +72,6 @@ export default function App() {
 
     const { data: { subscription } } = authService.onAuthStateChange((currentUser) => {
       setUser(currentUser)
-      setIsAuthLoading(false)
     })
 
     return () => subscription.unsubscribe()
