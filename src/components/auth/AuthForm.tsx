@@ -29,7 +29,11 @@ const registerSchema = z.object({
 type LoginFormValues = z.infer<typeof loginSchema>
 type RegisterFormValues = z.infer<typeof registerSchema>
 
-export function AuthForm() {
+interface AuthFormProps {
+  embedded?: boolean
+}
+
+export function AuthForm({ embedded = false }: AuthFormProps) {
   const [isRegistering, setIsRegistering] = useState(false)
   const [isLoading, setIsLoading] = useState(false)
 
@@ -90,8 +94,12 @@ export function AuthForm() {
     }
   }
 
+  const containerClasses = embedded
+    ? 'flex items-center justify-center bg-background p-4'
+    : 'min-h-screen flex items-center justify-center bg-background pattern-dots p-4'
+
   return (
-    <div className="min-h-screen flex items-center justify-center bg-background pattern-dots p-4">
+    <div className={containerClasses}>
       <Card className="w-full max-w-md shadow-xl">
         <CardHeader className="space-y-2 text-center">
           <div className="w-16 h-16 bg-primary rounded-full flex items-center justify-center mx-auto mb-2">
