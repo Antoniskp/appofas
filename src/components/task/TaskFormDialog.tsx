@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react'
 import { Task, TaskStatus, TaskPriority, CreateTaskInput } from '@/domain/task'
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog'
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from '@/components/ui/dialog'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Textarea } from '@/components/ui/textarea'
@@ -61,6 +61,9 @@ export function TaskFormDialog({ open, onClose, onSubmit, task }: TaskFormDialog
           <DialogTitle className="text-2xl">
             {task ? 'Edit Task' : 'Create New Task'}
           </DialogTitle>
+          <DialogDescription>
+            {task ? 'Update the details of your task.' : 'Fill in the details to create a new task.'}
+          </DialogDescription>
         </DialogHeader>
         
         <form onSubmit={handleSubmit} className="space-y-6">
