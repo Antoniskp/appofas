@@ -43,6 +43,11 @@ export default function App() {
   const [searchQuery, setSearchQuery] = useState('')
   const [isLoading, setIsLoading] = useState(true)
 
+  const resetTaskForm = () => {
+    setIsFormOpen(false)
+    setEditingTask(null)
+  }
+
   useEffect(() => {
     loadUser()
 
@@ -71,8 +76,7 @@ export default function App() {
       const nextPage = getPageFromPath()
       setCurrentPage(nextPage)
       if (nextPage === 'profile') {
-        setIsFormOpen(false)
-        setEditingTask(null)
+        resetTaskForm()
       }
     }
 
@@ -167,8 +171,7 @@ export default function App() {
   }
 
   const handleCloseForm = () => {
-    setIsFormOpen(false)
-    setEditingTask(null)
+    resetTaskForm()
   }
 
   const navigate = (page: AppPage) => {
@@ -176,8 +179,7 @@ export default function App() {
     const nextPath = page === 'profile' ? '/profile' : '/'
     window.history.pushState({}, '', nextPath)
     setCurrentPage(page)
-    setIsFormOpen(false)
-    setEditingTask(null)
+    resetTaskForm()
   }
 
   if (!user) {
