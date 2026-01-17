@@ -6,6 +6,7 @@ import { authService } from '@/services/auth-service'
 import { TaskBoard } from '@/components/task/TaskBoard'
 import { TaskList } from '@/components/task/TaskList'
 import { TaskFormDialog } from '@/components/task/TaskFormDialog'
+import { AuthForm } from '@/components/auth/AuthForm'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs'
@@ -129,14 +130,6 @@ export default function App() {
     setIsFormOpen(true)
   }
 
-  const handleSignIn = async () => {
-    try {
-      await authService.signInWithGitHub()
-    } catch (error) {
-      toast.error('Failed to start GitHub sign-in')
-    }
-  }
-
   const handleSignOut = async () => {
     try {
       await authService.signOut()
@@ -153,23 +146,10 @@ export default function App() {
 
   if (!user) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-background pattern-dots">
-        <div className="text-center space-y-4 p-8 bg-card rounded-xl shadow-lg max-w-md">
-          <div className="w-16 h-16 bg-primary rounded-full flex items-center justify-center mx-auto">
-            <UserIcon className="w-8 h-8 text-primary-foreground" weight="bold" />
-          </div>
-          <h1 className="text-3xl font-bold">TaskFlow</h1>
-          <p className="text-muted-foreground">
-            Please sign in with GitHub to access the application
-          </p>
-          <p className="text-sm text-muted-foreground">
-            Authentication is powered by Supabase and PostgreSQL
-          </p>
-          <Button onClick={handleSignIn} className="w-full">
-            Sign in with GitHub
-          </Button>
-        </div>
-      </div>
+      <>
+        <Toaster position="top-right" />
+        <AuthForm />
+      </>
     )
   }
 

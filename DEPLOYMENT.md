@@ -66,7 +66,10 @@ This application uses Supabase (PostgreSQL + Auth + REST) for authentication and
 ### Option A: Supabase Cloud
 
 1. Create a Supabase project at https://supabase.com.
-2. Enable the GitHub OAuth provider in **Authentication → Providers**.
+2. **Configure Authentication Providers:**
+   - Enable **Email** authentication in **Authentication → Providers → Email**
+   - (Optional) Enable **GitHub OAuth** provider in **Authentication → Providers → GitHub** for social login
+   - Configure email templates in **Authentication → Email Templates** for verification and password reset emails
 3. Create the tables used by the app:
 
 ```sql
@@ -122,13 +125,19 @@ supabase init
 supabase start
 ```
 
-3. Configure GitHub OAuth and your app URL in `supabase/config.toml` (create a GitHub OAuth app first, then set `auth.site_url` and `auth.additional_redirect_urls` and add the GitHub provider). Store `GITHUB_CLIENT_ID` and `GITHUB_SECRET` in `supabase/.env` (created by `supabase init` and loaded automatically when `supabase start` runs) or provide them via the environment for the Supabase containers.
+3. **Configure authentication** in `supabase/config.toml`:
+   - Set `auth.site_url` and `auth.additional_redirect_urls` for your domain
+   - **Enable email authentication** (enabled by default)
+   - (Optional) Configure GitHub OAuth by creating a GitHub OAuth app first, then add the GitHub provider settings below
+   - Store `GITHUB_CLIENT_ID` and `GITHUB_SECRET` in `supabase/.env` (created by `supabase init` and loaded automatically when `supabase start` runs)
 
 ```toml
 [auth]
 site_url = "https://app.your-domain.com"
 additional_redirect_urls = ["https://www.your-domain.com"]
+enable_signup = true
 
+# Optional: GitHub OAuth
 [auth.external.github]
 enabled = true
 client_id = "env(GITHUB_CLIENT_ID)"
