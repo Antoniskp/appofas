@@ -115,10 +115,10 @@ create table if not exists team_members (
 );
 ```
 
-4. Configure environment variables on your server (or in a `.env` file):
+4. Configure environment variables on your server (or in a `.env` file). For Supabase Cloud, copy the **Project URL** and **anon key** from **Project Settings → API**:
 
 ```bash
-VITE_SUPABASE_URL=your_supabase_project_url
+VITE_SUPABASE_URL=https://your-project-ref.supabase.co
 VITE_SUPABASE_ANON_KEY=your_supabase_anon_key
 ```
 

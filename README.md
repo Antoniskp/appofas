@@ -28,9 +28,9 @@ cd appofas
 npm install
 ```
 
-3. Create a `.env` file (see `.env.example`) with your Supabase environment variables:
+3. Create a `.env` file (see `.env.example`) with your Supabase environment variables. In Supabase Cloud, find these in **Project Settings → API** (Project URL + anon key). For local Supabase, use `supabase status`.
 ```bash
-VITE_SUPABASE_URL=your_supabase_project_url
+VITE_SUPABASE_URL=https://your-project-ref.supabase.co
 VITE_SUPABASE_ANON_KEY=your_supabase_anon_key
 ```
 
