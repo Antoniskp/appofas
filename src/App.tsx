@@ -21,6 +21,10 @@ type ViewMode = 'board' | 'list'
 type AppPage = 'tasks' | 'profile'
 
 const DEFAULT_PAGE: AppPage = 'tasks'
+const PAGE_PATHS: Record<AppPage, string> = {
+  tasks: '/',
+  profile: '/profile'
+}
 
 const getPageFromPath = (): AppPage => {
   if (typeof window === 'undefined') {
@@ -30,7 +34,7 @@ const getPageFromPath = (): AppPage => {
   const rawPath = window.location.pathname || '/'
   const pathWithoutTrailingSlash = rawPath.replace(/\/+$/, '') || '/'
 
-  return pathWithoutTrailingSlash.startsWith('/profile') ? 'profile' : DEFAULT_PAGE
+  return pathWithoutTrailingSlash.startsWith(PAGE_PATHS.profile) ? 'profile' : DEFAULT_PAGE
 }
 
 export default function App() {
@@ -78,9 +82,7 @@ export default function App() {
     const handlePopState = () => {
       const nextPage = getPageFromPath()
       setCurrentPage(nextPage)
-      if (nextPage === 'profile') {
-        resetTaskForm()
-      }
+      resetTaskForm()
     }
 
     window.addEventListener('popstate', handlePopState)
@@ -179,7 +181,7 @@ export default function App() {
 
   const navigate = (page: AppPage) => {
     if (page === currentPage) return
-    const nextPath = page === 'profile' ? '/profile' : '/'
+    const nextPath = PAGE_PATHS[page]
     window.history.pushState({}, '', nextPath)
     setCurrentPage(page)
     resetTaskForm()
