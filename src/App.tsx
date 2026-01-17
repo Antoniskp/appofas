@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useCallback } from 'react'
 import { Task, TaskStatus, CreateTaskInput, UpdateTaskInput, TaskFilters } from '@/domain/task'
 import { User } from '@/domain/user'
 import { taskService } from '@/services/task-service'
@@ -51,20 +51,31 @@ export default function App() {
   const [isAuthLoading, setIsAuthLoading] = useState(true)
   const showTaskForm = currentPage === 'tasks' && isFormOpen
 
+  const stopAuthLoading = useCallback(() => {
+    setIsAuthLoading((current) => (current ? false : current))
+  }, [])
+
   const resetTaskForm = () => {
     setIsFormOpen(false)
     setEditingTask(null)
   }
+
+  const loadUser = useCallback(async () => {
+    const currentUser = await authService.getCurrentUser()
+    setUser(currentUser)
+    stopAuthLoading()
+  }, [stopAuthLoading])
 
   useEffect(() => {
     loadUser()
 
     const { data: { subscription } } = authService.onAuthStateChange((currentUser) => {
       setUser(currentUser)
+      stopAuthLoading()
     })
 
     return () => subscription.unsubscribe()
-  }, [])
+  }, [loadUser, stopAuthLoading])
 
   useEffect(() => {
     if (user) {
@@ -89,15 +100,6 @@ export default function App() {
     window.addEventListener('popstate', handlePopState)
     return () => window.removeEventListener('popstate', handlePopState)
   }, [])
-
-  const loadUser = async () => {
-    try {
-      const currentUser = await authService.getCurrentUser()
-      setUser(currentUser)
-    } finally {
-      setIsAuthLoading(false)
-    }
-  }
 
   const loadTasks = async () => {
     setIsLoading(true)
