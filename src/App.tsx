@@ -60,10 +60,10 @@ export default function App() {
     try {
       const currentUser = await authService.getCurrentUser()
       setUser(currentUser)
+      setIsAuthLoading(false)
     } catch (error) {
       console.error('Failed to restore session', error)
       toast.error('Unable to restore your session. Please sign in again.')
-    } finally {
       setIsAuthLoading(false)
     }
   }, [])
@@ -200,7 +200,9 @@ export default function App() {
       <>
         <Toaster position="top-right" />
         <div className="min-h-screen bg-background flex items-center justify-center">
-          <div className="text-muted-foreground">Loading session...</div>
+          <div className="text-muted-foreground" role="status" aria-live="polite">
+            Loading session...
+          </div>
         </div>
       </>
     )
