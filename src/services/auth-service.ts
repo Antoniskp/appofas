@@ -1,4 +1,4 @@
-import { User, TeamMember } from '@/domain/user'
+import { User, TeamMember, UserRole } from '@/domain/user'
 import { supabase } from '@/services/supabase-client'
 import type { User as SupabaseUser } from '@supabase/supabase-js'
 import { v4 as uuidv4 } from 'uuid'
@@ -20,12 +20,16 @@ const mapSupabaseUser = (user: SupabaseUser | null): User | null => {
   ]
   const login = loginCandidates.find((value) => typeof value === 'string' && value.length > 0) || 'user'
 
+  const rawRole = typeof metadata.role === 'string' ? metadata.role : undefined
+  const resolvedRole: UserRole = rawRole === 'owner' || rawRole === 'editor' ? rawRole : 'member'
+
   return {
     id: user.id,
     login,
     email: user.email ?? '',
     avatarUrl: metadata.avatar_url || metadata.avatarUrl || '',
-    isOwner: metadata.role === 'owner'
+    isOwner: resolvedRole === 'owner',
+    role: resolvedRole
   }
 }
 

@@ -1,8 +1,12 @@
 import { useState, useEffect, useCallback, useRef } from 'react'
+import { Article, ArticleVisibility, CreateArticleInput, UpdateArticleInput } from '@/domain/article'
 import { Task, TaskStatus, CreateTaskInput, UpdateTaskInput, TaskFilters } from '@/domain/task'
 import { User } from '@/domain/user'
+import { articleService } from '@/services/article-service'
 import { taskService } from '@/services/task-service'
 import { authService } from '@/services/auth-service'
+import { ArticleFormDialog } from '@/components/article/ArticleFormDialog'
+import { ArticleList } from '@/components/article/ArticleList'
 import { TaskBoard } from '@/components/task/TaskBoard'
 import { TaskList } from '@/components/task/TaskList'
 import { TaskFormDialog } from '@/components/task/TaskFormDialog'
@@ -14,15 +18,17 @@ import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger, DropdownMenuSeparator } from '@/components/ui/dropdown-menu'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { Toaster } from '@/components/ui/sonner'
-import { Plus, Kanban, ListBullets, MagnifyingGlass, Funnel, SignOut, User as UserIcon } from '@phosphor-icons/react'
+import { Plus, Kanban, ListBullets, MagnifyingGlass, Funnel, SignOut, User as UserIcon, Newspaper, FileText } from '@phosphor-icons/react'
 import { toast } from 'sonner'
 
 type ViewMode = 'board' | 'list'
-type AppPage = 'tasks' | 'profile'
+type AppPage = 'tasks' | 'articles' | 'news' | 'profile'
 
 const DEFAULT_PAGE: AppPage = 'tasks'
 const PAGE_PATHS: Record<AppPage, string> = {
   tasks: '/',
+  articles: '/articles',
+  news: '/news',
   profile: '/profile'
 }
 
@@ -34,23 +40,44 @@ const getPageFromPath = (): AppPage => {
   const rawPath = window.location.pathname || '/'
   const pathWithoutTrailingSlash = rawPath.replace(/\/+$/, '') || '/'
 
-  return pathWithoutTrailingSlash.startsWith(PAGE_PATHS.profile) ? 'profile' : DEFAULT_PAGE
+  if (pathWithoutTrailingSlash.startsWith(PAGE_PATHS.profile)) {
+    return 'profile'
+  }
+
+  if (pathWithoutTrailingSlash.startsWith(PAGE_PATHS.articles)) {
+    return 'articles'
+  }
+
+  if (pathWithoutTrailingSlash.startsWith(PAGE_PATHS.news)) {
+    return 'news'
+  }
+
+  return DEFAULT_PAGE
 }
 
 export default function App() {
   const [user, setUser] = useState<User | null>(null)
   const [tasks, setTasks] = useState<Task[]>([])
   const [filteredTasks, setFilteredTasks] = useState<Task[]>([])
+  const [articles, setArticles] = useState<Article[]>([])
+  const [newsArticles, setNewsArticles] = useState<Article[]>([])
   const [viewMode, setViewMode] = useState<ViewMode>('board')
   const [currentPage, setCurrentPage] = useState<AppPage>(getPageFromPath())
   const [isFormOpen, setIsFormOpen] = useState(false)
   const [editingTask, setEditingTask] = useState<Task | null>(null)
+  const [isArticleFormOpen, setIsArticleFormOpen] = useState(false)
+  const [editingArticle, setEditingArticle] = useState<Article | null>(null)
   const [filters, setFilters] = useState<TaskFilters>({})
   const [searchQuery, setSearchQuery] = useState('')
   const [isLoading, setIsLoading] = useState(true)
+  const [isArticlesLoading, setIsArticlesLoading] = useState(true)
+  const [isNewsLoading, setIsNewsLoading] = useState(true)
   const [isAuthLoading, setIsAuthLoading] = useState(true)
   const hasResolvedAuth = useRef(false)
   const showTaskForm = currentPage === 'tasks' && isFormOpen
+  const showArticleForm = currentPage === 'articles' && isArticleFormOpen
+  const canTagNews = user?.role === 'editor' || user?.isOwner
+  const roleLabel = user?.role ? `${user.role.charAt(0).toUpperCase()}${user.role.slice(1)}` : 'Member'
 
   const finishAuthLoading = useCallback(() => {
     if (hasResolvedAuth.current) return
@@ -61,6 +88,11 @@ export default function App() {
   const resetTaskForm = () => {
     setIsFormOpen(false)
     setEditingTask(null)
+  }
+
+  const resetArticleForm = () => {
+    setIsArticleFormOpen(false)
+    setEditingArticle(null)
   }
 
   const loadUser = useCallback(async () => {
@@ -75,6 +107,32 @@ export default function App() {
     }
   }, [finishAuthLoading])
 
+  const loadNews = useCallback(async () => {
+    setIsNewsLoading(true)
+    try {
+      const latestNews = await articleService.getNewsArticles()
+      setNewsArticles(latestNews)
+    } catch (error) {
+      console.error('Failed to load news', error)
+      toast.error('Failed to load news')
+    } finally {
+      setIsNewsLoading(false)
+    }
+  }, [])
+
+  const loadArticles = useCallback(async (userId: string) => {
+    setIsArticlesLoading(true)
+    try {
+      const authoredArticles = await articleService.getArticlesForUser(userId)
+      setArticles(authoredArticles)
+    } catch (error) {
+      console.error('Failed to load articles', error)
+      toast.error('Failed to load articles')
+    } finally {
+      setIsArticlesLoading(false)
+    }
+  }, [])
+
   useEffect(() => {
     loadUser()
 
@@ -87,13 +145,20 @@ export default function App() {
   }, [loadUser, finishAuthLoading])
 
   useEffect(() => {
+    loadNews()
+  }, [loadNews])
+
+  useEffect(() => {
     if (user) {
       loadTasks()
+      loadArticles(user.id)
     } else {
       setTasks([])
       setFilteredTasks([])
+      setArticles([])
+      setEditingArticle(null)
     }
-  }, [user])
+  }, [user, loadArticles])
 
   useEffect(() => {
     applyFilters()
@@ -104,6 +169,7 @@ export default function App() {
       const nextPage = getPageFromPath()
       setCurrentPage(nextPage)
       resetTaskForm()
+      resetArticleForm()
     }
 
     window.addEventListener('popstate', handlePopState)
@@ -182,6 +248,69 @@ export default function App() {
     setIsFormOpen(true)
   }
 
+  const normalizeArticleInput = (data: CreateArticleInput): CreateArticleInput => {
+    const isNews = canTagNews ? data.isNews : false
+    const visibility = isNews ? ArticleVisibility.PUBLIC : data.visibility
+
+    return {
+      ...data,
+      isNews,
+      visibility
+    }
+  }
+
+  const handleCreateArticle = async (data: CreateArticleInput) => {
+    if (!user) return
+
+    try {
+      const normalized = normalizeArticleInput(data)
+      const newArticle = await articleService.createArticle(normalized, user.id)
+      setArticles([newArticle, ...articles])
+      toast.success('Article published successfully')
+      await loadNews()
+    } catch (error) {
+      console.error('Failed to create article', error)
+      toast.error('Failed to publish article')
+    }
+  }
+
+  const handleUpdateArticle = async (data: CreateArticleInput) => {
+    if (!editingArticle) return
+
+    try {
+      const normalized = normalizeArticleInput(data)
+      const updateData: UpdateArticleInput = {
+        id: editingArticle.id,
+        ...normalized
+      }
+      const updated = await articleService.updateArticle(updateData)
+      setArticles(articles.map((article) => (article.id === updated.id ? updated : article)))
+      toast.success('Article updated successfully')
+      setEditingArticle(null)
+      await loadNews()
+    } catch (error) {
+      console.error('Failed to update article', error)
+      toast.error('Failed to update article')
+    }
+  }
+
+  const handleDeleteArticle = async (id: string) => {
+    try {
+      await articleService.deleteArticle(id)
+      setArticles(articles.filter((article) => article.id !== id))
+      toast.success('Article deleted successfully')
+      await loadNews()
+    } catch (error) {
+      console.error('Failed to delete article', error)
+      toast.error('Failed to delete article')
+    }
+  }
+
+  const handleEditArticle = (article: Article) => {
+    setEditingArticle(article)
+    setIsArticleFormOpen(true)
+  }
+
   const handleSignOut = async () => {
     try {
       await authService.signOut()
@@ -195,12 +324,17 @@ export default function App() {
     resetTaskForm()
   }
 
+  const handleCloseArticleForm = () => {
+    resetArticleForm()
+  }
+
   const navigate = (page: AppPage) => {
     if (page === currentPage) return
     const nextPath = PAGE_PATHS[page]
     window.history.pushState({}, '', nextPath)
     setCurrentPage(page)
     resetTaskForm()
+    resetArticleForm()
   }
 
   if (isAuthLoading) {
@@ -218,10 +352,57 @@ export default function App() {
 
   if (!user) {
     return (
-      <>
+      <div className="min-h-screen bg-background">
         <Toaster position="top-right" />
-        <AuthForm />
-      </>
+        <header className="border-b border-border bg-card sticky top-0 z-10 shadow-sm">
+          <div className="container mx-auto px-6 py-4">
+            <div className="flex items-center justify-between gap-4">
+              <div className="flex items-center gap-3">
+                <div className="w-10 h-10 bg-primary rounded-lg flex items-center justify-center">
+                  <Newspaper className="w-6 h-6 text-primary-foreground" weight="bold" />
+                </div>
+                <h1 className="text-2xl font-bold">TaskFlow News</h1>
+              </div>
+              <Button variant="outline" asChild>
+                <a href="#auth">Sign In</a>
+              </Button>
+            </div>
+          </div>
+        </header>
+
+        <main className="container mx-auto px-6 py-8 space-y-12">
+          <section className="space-y-6">
+            <div>
+              <h2 className="text-3xl font-bold mb-1">Latest News</h2>
+              <p className="text-muted-foreground">
+                Public newsroom stories tagged by editors for the community.
+              </p>
+            </div>
+
+            {isNewsLoading ? (
+              <div className="flex items-center justify-center h-48">
+                <div className="text-muted-foreground">Loading news...</div>
+              </div>
+            ) : (
+              <ArticleList
+                articles={newsArticles}
+                emptyTitle="No news yet"
+                emptyDescription="Editor-approved news stories will show up here."
+              />
+            )}
+          </section>
+
+          <section id="auth" className="space-y-6">
+            <div>
+              <h2 className="text-2xl font-bold mb-1">Sign in to publish</h2>
+              <p className="text-muted-foreground">
+                Create private or public articles and manage your newsroom content.
+              </p>
+            </div>
+            <AuthForm embedded />
+          </section>
+        </main>
+      </div>
     )
   }
 
@@ -231,11 +412,43 @@ export default function App() {
       <header className="border-b border-border bg-card sticky top-0 z-10 shadow-sm">
         <div className="container mx-auto px-6 py-4">
           <div className="flex items-center justify-between gap-4">
-            <div className="flex items-center gap-3">
-              <div className="w-10 h-10 bg-primary rounded-lg flex items-center justify-center">
-                <Kanban className="w-6 h-6 text-primary-foreground" weight="bold" />
+            <div className="flex items-center gap-4">
+              <div className="flex items-center gap-3">
+                <div className="w-10 h-10 bg-primary rounded-lg flex items-center justify-center">
+                  <Kanban className="w-6 h-6 text-primary-foreground" weight="bold" />
+                </div>
+                <h1 className="text-2xl font-bold">TaskFlow</h1>
               </div>
-              <h1 className="text-2xl font-bold">TaskFlow</h1>
+
+              <nav className="hidden md:flex items-center gap-2">
+                <Button
+                  variant={currentPage === 'tasks' ? 'secondary' : 'ghost'}
+                  size="sm"
+                  onClick={() => navigate('tasks')}
+                  className="gap-2"
+                >
+                  <Kanban className="w-4 h-4" />
+                  Tasks
+                </Button>
+                <Button
+                  variant={currentPage === 'articles' ? 'secondary' : 'ghost'}
+                  size="sm"
+                  onClick={() => navigate('articles')}
+                  className="gap-2"
+                >
+                  <FileText className="w-4 h-4" />
+                  Articles
+                </Button>
+                <Button
+                  variant={currentPage === 'news' ? 'secondary' : 'ghost'}
+                  size="sm"
+                  onClick={() => navigate('news')}
+                  className="gap-2"
+                >
+                  <Newspaper className="w-4 h-4" />
+                  News
+                </Button>
+              </nav>
             </div>
 
             <div className="flex items-center gap-3">
@@ -298,7 +511,7 @@ export default function App() {
               <div className="grid gap-4 sm:grid-cols-2">
                 <div>
                   <p className="text-sm text-muted-foreground">Role</p>
-                  <p className="font-medium">{user.isOwner ? 'Owner' : 'Member'}</p>
+                  <p className="font-medium">{roleLabel}</p>
                 </div>
                 <div>
                   <p className="text-sm text-muted-foreground">User ID</p>
@@ -306,6 +519,55 @@ export default function App() {
                 </div>
               </div>
             </div>
+          </div>
+        ) : currentPage === 'articles' ? (
+          <div className="space-y-6">
+            <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
+              <div>
+                <h2 className="text-3xl font-bold mb-1">My Articles</h2>
+                <p className="text-muted-foreground">
+                  {articles.length} {articles.length === 1 ? 'article' : 'articles'}
+                </p>
+              </div>
+
+              <Button onClick={() => setIsArticleFormOpen(true)} className="gap-2">
+                <Plus className="w-4 h-4" weight="bold" />
+                New Article
+              </Button>
+            </div>
+
+            {isArticlesLoading ? (
+              <div className="flex items-center justify-center h-64">
+                <div className="text-muted-foreground">Loading articles...</div>
+              </div>
+            ) : (
+              <ArticleList
+                articles={articles}
+                onEdit={handleEditArticle}
+                onDelete={handleDeleteArticle}
+              />
+            )}
+          </div>
+        ) : currentPage === 'news' ? (
+          <div className="space-y-6">
+            <div>
+              <h2 className="text-3xl font-bold mb-1">Newsroom</h2>
+              <p className="text-muted-foreground">
+                Editor-tagged stories available to everyone.
+              </p>
+            </div>
+
+            {isNewsLoading ? (
+              <div className="flex items-center justify-center h-64">
+                <div className="text-muted-foreground">Loading news...</div>
+              </div>
+            ) : (
+              <ArticleList
+                articles={newsArticles}
+                emptyTitle="No news yet"
+                emptyDescription="Tagged news articles will appear here for everyone."
+              />
+            )}
           </div>
         ) : (
           <div className="space-y-6">
@@ -397,6 +659,15 @@ export default function App() {
         onClose={handleCloseForm}
         onSubmit={editingTask ? handleUpdateTask : handleCreateTask}
         task={editingTask}
+      />
+
+      <ArticleFormDialog
+        open={showArticleForm}
+        onClose={handleCloseArticleForm}
+        onSubmit={editingArticle ? handleUpdateArticle : handleCreateArticle}
+        article={editingArticle}
+        canTagNews={canTagNews}
+        defaultAuthor={user.login}
       />
     </div>
   )
