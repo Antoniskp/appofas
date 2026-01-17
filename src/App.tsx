@@ -18,17 +18,42 @@ import { Plus, Kanban, ListBullets, MagnifyingGlass, Funnel, SignOut, User as Us
 import { toast } from 'sonner'
 
 type ViewMode = 'board' | 'list'
+type AppPage = 'tasks' | 'profile'
+
+const DEFAULT_PAGE: AppPage = 'tasks'
+const PAGE_PATHS: Record<AppPage, string> = {
+  tasks: '/',
+  profile: '/profile'
+}
+
+const getPageFromPath = (): AppPage => {
+  if (typeof window === 'undefined') {
+    return DEFAULT_PAGE
+  }
+
+  const rawPath = window.location.pathname || '/'
+  const pathWithoutTrailingSlash = rawPath.replace(/\/+$/, '') || '/'
+
+  return pathWithoutTrailingSlash.startsWith(PAGE_PATHS.profile) ? 'profile' : DEFAULT_PAGE
+}
 
 export default function App() {
   const [user, setUser] = useState<User | null>(null)
   const [tasks, setTasks] = useState<Task[]>([])
   const [filteredTasks, setFilteredTasks] = useState<Task[]>([])
   const [viewMode, setViewMode] = useState<ViewMode>('board')
+  const [currentPage, setCurrentPage] = useState<AppPage>(getPageFromPath())
   const [isFormOpen, setIsFormOpen] = useState(false)
   const [editingTask, setEditingTask] = useState<Task | null>(null)
   const [filters, setFilters] = useState<TaskFilters>({})
   const [searchQuery, setSearchQuery] = useState('')
   const [isLoading, setIsLoading] = useState(true)
+  const showTaskForm = currentPage === 'tasks' && isFormOpen
+
+  const resetTaskForm = () => {
+    setIsFormOpen(false)
+    setEditingTask(null)
+  }
 
   useEffect(() => {
     loadUser()
@@ -52,6 +77,17 @@ export default function App() {
   useEffect(() => {
     applyFilters()
   }, [tasks, filters, searchQuery])
+
+  useEffect(() => {
+    const handlePopState = () => {
+      const nextPage = getPageFromPath()
+      setCurrentPage(nextPage)
+      resetTaskForm()
+    }
+
+    window.addEventListener('popstate', handlePopState)
+    return () => window.removeEventListener('popstate', handlePopState)
+  }, [])
 
   const loadUser = async () => {
     const currentUser = await authService.getCurrentUser()
@@ -140,8 +176,15 @@ export default function App() {
   }
 
   const handleCloseForm = () => {
-    setIsFormOpen(false)
-    setEditingTask(null)
+    resetTaskForm()
+  }
+
+  const navigate = (page: AppPage) => {
+    if (page === currentPage) return
+    const nextPath = PAGE_PATHS[page]
+    window.history.pushState({}, '', nextPath)
+    setCurrentPage(page)
+    resetTaskForm()
   }
 
   if (!user) {
@@ -183,6 +226,10 @@ export default function App() {
                     {user.email}
                   </DropdownMenuItem>
                   <DropdownMenuSeparator />
+                  <DropdownMenuItem onSelect={() => navigate('profile')}>
+                    <UserIcon className="mr-2 h-4 w-4" />
+                    Profile
+                  </DropdownMenuItem>
                   <DropdownMenuItem onSelect={handleSignOut}>
                     <SignOut className="mr-2 h-4 w-4" />
                     Sign Out
@@ -195,91 +242,129 @@ export default function App() {
       </header>
 
       <main className="container mx-auto px-6 py-8">
-        <div className="space-y-6">
-          <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
-            <div>
-              <h2 className="text-3xl font-bold mb-1">My Tasks</h2>
-              <p className="text-muted-foreground">
-                {filteredTasks.length} {filteredTasks.length === 1 ? 'task' : 'tasks'}
-              </p>
-            </div>
-
-            <div className="flex items-center gap-2">
-              <Tabs value={viewMode} onValueChange={(v) => setViewMode(v as ViewMode)}>
-                <TabsList>
-                  <TabsTrigger value="board" className="gap-2">
-                    <Kanban className="w-4 h-4" />
-                    <span className="hidden sm:inline">Board</span>
-                  </TabsTrigger>
-                  <TabsTrigger value="list" className="gap-2">
-                    <ListBullets className="w-4 h-4" />
-                    <span className="hidden sm:inline">List</span>
-                  </TabsTrigger>
-                </TabsList>
-              </Tabs>
-
-              <Button onClick={() => setIsFormOpen(true)} className="gap-2">
-                <Plus className="w-4 h-4" weight="bold" />
-                New Task
+        {currentPage === 'profile' ? (
+          <div className="max-w-2xl mx-auto space-y-6">
+            <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
+              <div>
+                <h2 className="text-3xl font-bold mb-1">Profile</h2>
+                <p className="text-muted-foreground">Your account details and access level.</p>
+              </div>
+              <Button variant="outline" onClick={() => navigate('tasks')}>
+                Back to Tasks
               </Button>
             </div>
-          </div>
 
-          <div className="flex flex-col md:flex-row gap-3">
-            <div className="relative flex-1">
-              <MagnifyingGlass className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
-              <Input
-                placeholder="Search tasks..."
-                value={searchQuery}
-                onChange={(e) => setSearchQuery(e.target.value)}
-                className="pl-10"
+            <div className="rounded-xl border border-border bg-card p-6 shadow-sm space-y-6">
+              <div className="flex flex-col sm:flex-row sm:items-center gap-4">
+                <Avatar className="w-16 h-16">
+                  <AvatarImage src={user.avatarUrl} />
+                  <AvatarFallback>{user.login.substring(0, 2).toUpperCase()}</AvatarFallback>
+                </Avatar>
+                <div>
+                  <p className="text-xl font-semibold">{user.login}</p>
+                  <p className="text-muted-foreground">{user.email}</p>
+                </div>
+              </div>
+
+              <div className="grid gap-4 sm:grid-cols-2">
+                <div>
+                  <p className="text-sm text-muted-foreground">Role</p>
+                  <p className="font-medium">{user.isOwner ? 'Owner' : 'Member'}</p>
+                </div>
+                <div>
+                  <p className="text-sm text-muted-foreground">User ID</p>
+                  <p className="font-medium break-all">{user.id}</p>
+                </div>
+              </div>
+            </div>
+          </div>
+        ) : (
+          <div className="space-y-6">
+            <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
+              <div>
+                <h2 className="text-3xl font-bold mb-1">My Tasks</h2>
+                <p className="text-muted-foreground">
+                  {filteredTasks.length} {filteredTasks.length === 1 ? 'task' : 'tasks'}
+                </p>
+              </div>
+
+              <div className="flex items-center gap-2">
+                <Tabs value={viewMode} onValueChange={(v) => setViewMode(v as ViewMode)}>
+                  <TabsList>
+                    <TabsTrigger value="board" className="gap-2">
+                      <Kanban className="w-4 h-4" />
+                      <span className="hidden sm:inline">Board</span>
+                    </TabsTrigger>
+                    <TabsTrigger value="list" className="gap-2">
+                      <ListBullets className="w-4 h-4" />
+                      <span className="hidden sm:inline">List</span>
+                    </TabsTrigger>
+                  </TabsList>
+                </Tabs>
+
+                <Button onClick={() => setIsFormOpen(true)} className="gap-2">
+                  <Plus className="w-4 h-4" weight="bold" />
+                  New Task
+                </Button>
+              </div>
+            </div>
+
+            <div className="flex flex-col md:flex-row gap-3">
+              <div className="relative flex-1">
+                <MagnifyingGlass className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
+                <Input
+                  placeholder="Search tasks..."
+                  value={searchQuery}
+                  onChange={(e) => setSearchQuery(e.target.value)}
+                  className="pl-10"
+                />
+              </div>
+
+              <div className="flex gap-2">
+                <Select
+                  value={filters.status?.[0] || 'all'}
+                  onValueChange={(v) => setFilters({ ...filters, status: v === 'all' ? undefined : [v as TaskStatus] })}
+                >
+                  <SelectTrigger className="w-[140px]">
+                    <Funnel className="w-4 h-4 mr-2" />
+                    <SelectValue placeholder="Status" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="all">All Status</SelectItem>
+                    <SelectItem value={TaskStatus.TODO}>To Do</SelectItem>
+                    <SelectItem value={TaskStatus.IN_PROGRESS}>In Progress</SelectItem>
+                    <SelectItem value={TaskStatus.IN_REVIEW}>In Review</SelectItem>
+                    <SelectItem value={TaskStatus.DONE}>Done</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+            </div>
+
+            {isLoading ? (
+              <div className="flex items-center justify-center h-64">
+                <div className="text-muted-foreground">Loading tasks...</div>
+              </div>
+            ) : viewMode === 'board' ? (
+              <TaskBoard
+                tasks={filteredTasks}
+                onEdit={handleEditTask}
+                onDelete={handleDeleteTask}
+                onStatusChange={handleStatusChange}
               />
-            </div>
-
-            <div className="flex gap-2">
-              <Select
-                value={filters.status?.[0] || 'all'}
-                onValueChange={(v) => setFilters({ ...filters, status: v === 'all' ? undefined : [v as TaskStatus] })}
-              >
-                <SelectTrigger className="w-[140px]">
-                  <Funnel className="w-4 h-4 mr-2" />
-                  <SelectValue placeholder="Status" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="all">All Status</SelectItem>
-                  <SelectItem value={TaskStatus.TODO}>To Do</SelectItem>
-                  <SelectItem value={TaskStatus.IN_PROGRESS}>In Progress</SelectItem>
-                  <SelectItem value={TaskStatus.IN_REVIEW}>In Review</SelectItem>
-                  <SelectItem value={TaskStatus.DONE}>Done</SelectItem>
-                </SelectContent>
-              </Select>
-            </div>
+            ) : (
+              <TaskList
+                tasks={filteredTasks}
+                onEdit={handleEditTask}
+                onDelete={handleDeleteTask}
+                onStatusChange={handleStatusChange}
+              />
+            )}
           </div>
-
-          {isLoading ? (
-            <div className="flex items-center justify-center h-64">
-              <div className="text-muted-foreground">Loading tasks...</div>
-            </div>
-          ) : viewMode === 'board' ? (
-            <TaskBoard
-              tasks={filteredTasks}
-              onEdit={handleEditTask}
-              onDelete={handleDeleteTask}
-              onStatusChange={handleStatusChange}
-            />
-          ) : (
-            <TaskList
-              tasks={filteredTasks}
-              onEdit={handleEditTask}
-              onDelete={handleDeleteTask}
-              onStatusChange={handleStatusChange}
-            />
-          )}
-        </div>
+        )}
       </main>
 
       <TaskFormDialog
-        open={isFormOpen}
+        open={showTaskForm}
         onClose={handleCloseForm}
         onSubmit={editingTask ? handleUpdateTask : handleCreateTask}
         task={editingTask}
