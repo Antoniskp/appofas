@@ -21,10 +21,14 @@ type ViewMode = 'board' | 'list'
 type AppPage = 'tasks' | 'profile'
 
 const getPageFromPath = (): AppPage => {
-  if (typeof window !== 'undefined' && window.location.pathname.startsWith('/profile')) {
-    return 'profile'
+  if (typeof window === 'undefined') {
+    return 'tasks'
   }
-  return 'tasks'
+
+  const rawPath = window.location.pathname || '/'
+  const normalizedPath = rawPath.replace(/\/+$/, '') || '/'
+
+  return normalizedPath.startsWith('/profile') ? 'profile' : 'tasks'
 }
 
 export default function App() {
@@ -64,7 +68,12 @@ export default function App() {
 
   useEffect(() => {
     const handlePopState = () => {
-      setCurrentPage(getPageFromPath())
+      const nextPage = getPageFromPath()
+      setCurrentPage(nextPage)
+      if (nextPage === 'profile') {
+        setIsFormOpen(false)
+        setEditingTask(null)
+      }
     }
 
     window.addEventListener('popstate', handlePopState)
@@ -167,6 +176,8 @@ export default function App() {
     const nextPath = page === 'profile' ? '/profile' : '/'
     window.history.pushState({}, '', nextPath)
     setCurrentPage(page)
+    setIsFormOpen(false)
+    setEditingTask(null)
   }
 
   if (!user) {
