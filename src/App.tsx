@@ -52,7 +52,7 @@ export default function App() {
   const showTaskForm = currentPage === 'tasks' && isFormOpen
 
   const stopAuthLoading = useCallback(() => {
-    setIsAuthLoading((current) => (current ? false : current))
+    setIsAuthLoading(false)
   }, [])
 
   const resetTaskForm = () => {
@@ -61,9 +61,12 @@ export default function App() {
   }
 
   const loadUser = useCallback(async () => {
-    const currentUser = await authService.getCurrentUser()
-    setUser(currentUser)
-    stopAuthLoading()
+    try {
+      const currentUser = await authService.getCurrentUser()
+      setUser(currentUser)
+    } finally {
+      stopAuthLoading()
+    }
   }, [stopAuthLoading])
 
   useEffect(() => {
