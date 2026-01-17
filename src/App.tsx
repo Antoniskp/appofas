@@ -20,15 +20,17 @@ import { toast } from 'sonner'
 type ViewMode = 'board' | 'list'
 type AppPage = 'tasks' | 'profile'
 
+const DEFAULT_PAGE: AppPage = 'tasks'
+
 const getPageFromPath = (): AppPage => {
   if (typeof window === 'undefined') {
-    return 'tasks'
+    return DEFAULT_PAGE
   }
 
   const rawPath = window.location.pathname || '/'
   const normalizedPath = rawPath.replace(/\/+$/, '') || '/'
 
-  return normalizedPath.startsWith('/profile') ? 'profile' : 'tasks'
+  return normalizedPath.startsWith('/profile') ? 'profile' : DEFAULT_PAGE
 }
 
 export default function App() {
@@ -177,7 +179,11 @@ export default function App() {
   const navigate = (page: AppPage) => {
     if (page === currentPage) return
     const nextPath = page === 'profile' ? '/profile' : '/'
-    window.history.pushState({}, '', nextPath)
+    try {
+      window.history.pushState({}, '', nextPath)
+    } catch (error) {
+      window.location.assign(nextPath)
+    }
     setCurrentPage(page)
     resetTaskForm()
   }
@@ -358,14 +364,12 @@ export default function App() {
         )}
       </main>
 
-      {currentPage === 'tasks' && (
-        <TaskFormDialog
-          open={isFormOpen}
-          onClose={handleCloseForm}
-          onSubmit={editingTask ? handleUpdateTask : handleCreateTask}
-          task={editingTask}
-        />
-      )}
+      <TaskFormDialog
+        open={currentPage === 'tasks' && isFormOpen}
+        onClose={handleCloseForm}
+        onSubmit={editingTask ? handleUpdateTask : handleCreateTask}
+        task={editingTask}
+      />
     </div>
   )
 }
