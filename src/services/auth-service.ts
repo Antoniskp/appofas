@@ -30,6 +30,22 @@ const mapSupabaseUser = (user: SupabaseUser | null): User | null => {
 }
 
 export class AuthService {
+  /**
+   * Build a same-origin redirect URL for OAuth flows, preserving the current route.
+   * Falls back to the app base path if the current path is outside the configured base.
+   */
+  private getRedirectTarget(): string {
+    const { pathname, search, hash, origin } = window.location
+    const configuredBase = import.meta.env.BASE_URL ?? '/'
+    const basePath = configuredBase.startsWith('/') ? configuredBase : '/'
+    let normalizedBase = basePath
+    if (normalizedBase !== '/' && normalizedBase.endsWith('/')) {
+      normalizedBase = normalizedBase.slice(0, -1)
+    }
+    const normalizedPath = pathname.startsWith('/') ? pathname : '/'
+    const safePath = normalizedPath.startsWith(normalizedBase) ? normalizedPath : normalizedBase
+    return `${origin}${safePath}${search}${hash}`
+  }
   async getCurrentUser(): Promise<User | null> {
     try {
       const { data: sessionData } = await supabase.auth.getSession()
@@ -78,7 +94,7 @@ export class AuthService {
     const { error } = await supabase.auth.signInWithOAuth({
       provider: 'github',
       options: {
-        redirectTo: `${window.location.origin}`
+        redirectTo: this.getRedirectTarget()
       }
     })
 
