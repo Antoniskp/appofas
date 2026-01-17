@@ -51,10 +51,6 @@ export default function App() {
   const [isAuthLoading, setIsAuthLoading] = useState(true)
   const showTaskForm = currentPage === 'tasks' && isFormOpen
 
-  const stopAuthLoading = useCallback(() => {
-    setIsAuthLoading(false)
-  }, [])
-
   const resetTaskForm = () => {
     setIsFormOpen(false)
     setEditingTask(null)
@@ -64,21 +60,23 @@ export default function App() {
     try {
       const currentUser = await authService.getCurrentUser()
       setUser(currentUser)
+    } catch {
+      toast.error('Failed to restore session')
     } finally {
-      stopAuthLoading()
+      setIsAuthLoading(false)
     }
-  }, [stopAuthLoading])
+  }, [])
 
   useEffect(() => {
     loadUser()
 
     const { data: { subscription } } = authService.onAuthStateChange((currentUser) => {
       setUser(currentUser)
-      stopAuthLoading()
+      setIsAuthLoading(false)
     })
 
     return () => subscription.unsubscribe()
-  }, [loadUser, stopAuthLoading])
+  }, [loadUser])
 
   useEffect(() => {
     if (user) {
