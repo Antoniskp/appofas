@@ -30,8 +30,13 @@ const mapSupabaseUser = (user: SupabaseUser | null): User | null => {
 }
 
 export class AuthService {
+  /**
+   * Build a same-origin redirect URL for OAuth flows, preserving the current route.
+   */
   private getRedirectTarget() {
-    return `${window.location.origin}${window.location.pathname}`
+    const { pathname, search, hash, origin } = window.location
+    const safePath = pathname.startsWith('/') ? pathname : '/'
+    return `${origin}${safePath}${search}${hash}`
   }
   async getCurrentUser(): Promise<User | null> {
     try {
