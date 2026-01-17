@@ -34,9 +34,10 @@ export class AuthService {
    * Build a same-origin redirect URL for OAuth flows, preserving the current route.
    * Falls back to the app base path if the current path is outside the configured base.
    */
-  private getRedirectTarget() {
+  private getRedirectTarget(): string {
     const { pathname, search, hash, origin } = window.location
-    const basePath = import.meta.env.BASE_URL ?? '/'
+    const configuredBase = import.meta.env.BASE_URL ?? '/'
+    const basePath = configuredBase.startsWith('/') ? configuredBase : '/'
     let normalizedBase = basePath
     if (normalizedBase !== '/' && normalizedBase.endsWith('/')) {
       normalizedBase = normalizedBase.slice(0, -1)
