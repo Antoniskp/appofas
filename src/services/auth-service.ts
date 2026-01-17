@@ -32,6 +32,11 @@ const mapSupabaseUser = (user: SupabaseUser | null): User | null => {
 export class AuthService {
   async getCurrentUser(): Promise<User | null> {
     try {
+      const { data: sessionData } = await supabase.auth.getSession()
+      if (sessionData.session?.user) {
+        return mapSupabaseUser(sessionData.session.user)
+      }
+
       const { data, error } = await supabase.auth.getUser()
       if (error) {
         return null
