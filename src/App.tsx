@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useCallback, useRef } from 'react'
 import { Task, TaskStatus, CreateTaskInput, UpdateTaskInput, TaskFilters } from '@/domain/task'
 import { User } from '@/domain/user'
 import { taskService } from '@/services/task-service'
@@ -48,22 +48,43 @@ export default function App() {
   const [filters, setFilters] = useState<TaskFilters>({})
   const [searchQuery, setSearchQuery] = useState('')
   const [isLoading, setIsLoading] = useState(true)
+  const [isAuthLoading, setIsAuthLoading] = useState(true)
+  const hasResolvedAuth = useRef(false)
   const showTaskForm = currentPage === 'tasks' && isFormOpen
+
+  const finishAuthLoading = useCallback(() => {
+    if (hasResolvedAuth.current) return
+    hasResolvedAuth.current = true
+    setIsAuthLoading(false)
+  }, [])
 
   const resetTaskForm = () => {
     setIsFormOpen(false)
     setEditingTask(null)
   }
 
+  const loadUser = useCallback(async () => {
+    try {
+      const currentUser = await authService.getCurrentUser()
+      setUser(currentUser)
+    } catch (error) {
+      console.error('Failed to restore session', error)
+      toast.error('Unable to restore your session. Please sign in again.')
+    } finally {
+      finishAuthLoading()
+    }
+  }, [finishAuthLoading])
+
   useEffect(() => {
     loadUser()
 
     const { data: { subscription } } = authService.onAuthStateChange((currentUser) => {
       setUser(currentUser)
+      finishAuthLoading()
     })
 
     return () => subscription.unsubscribe()
-  }, [])
+  }, [loadUser, finishAuthLoading])
 
   useEffect(() => {
     if (user) {
@@ -88,11 +109,6 @@ export default function App() {
     window.addEventListener('popstate', handlePopState)
     return () => window.removeEventListener('popstate', handlePopState)
   }, [])
-
-  const loadUser = async () => {
-    const currentUser = await authService.getCurrentUser()
-    setUser(currentUser)
-  }
 
   const loadTasks = async () => {
     setIsLoading(true)
@@ -185,6 +201,19 @@ export default function App() {
     window.history.pushState({}, '', nextPath)
     setCurrentPage(page)
     resetTaskForm()
+  }
+
+  if (isAuthLoading) {
+    return (
+      <>
+        <Toaster position="top-right" />
+        <div className="min-h-screen bg-background flex items-center justify-center">
+          <div className="text-muted-foreground" role="status" aria-live="polite">
+            Loading session...
+          </div>
+        </div>
+      </>
+    )
   }
 
   if (!user) {
