@@ -48,6 +48,7 @@ export default function App() {
   const [filters, setFilters] = useState<TaskFilters>({})
   const [searchQuery, setSearchQuery] = useState('')
   const [isLoading, setIsLoading] = useState(true)
+  const [isAuthLoading, setIsAuthLoading] = useState(true)
   const showTaskForm = currentPage === 'tasks' && isFormOpen
 
   const resetTaskForm = () => {
@@ -60,6 +61,7 @@ export default function App() {
 
     const { data: { subscription } } = authService.onAuthStateChange((currentUser) => {
       setUser(currentUser)
+      setIsAuthLoading(false)
     })
 
     return () => subscription.unsubscribe()
@@ -90,8 +92,12 @@ export default function App() {
   }, [])
 
   const loadUser = async () => {
-    const currentUser = await authService.getCurrentUser()
-    setUser(currentUser)
+    try {
+      const currentUser = await authService.getCurrentUser()
+      setUser(currentUser)
+    } finally {
+      setIsAuthLoading(false)
+    }
   }
 
   const loadTasks = async () => {
@@ -185,6 +191,17 @@ export default function App() {
     window.history.pushState({}, '', nextPath)
     setCurrentPage(page)
     resetTaskForm()
+  }
+
+  if (isAuthLoading) {
+    return (
+      <>
+        <Toaster position="top-right" />
+        <div className="min-h-screen bg-background flex items-center justify-center">
+          <div className="text-muted-foreground">Loading session...</div>
+        </div>
+      </>
+    )
   }
 
   if (!user) {
