@@ -36,13 +36,7 @@ export class AuthService {
       if (sessionData.session?.user) {
         return mapSupabaseUser(sessionData.session.user)
       }
-
-      const { data, error } = await supabase.auth.getUser()
-      if (error) {
-        return null
-      }
-
-      return mapSupabaseUser(data.user)
+      return null
     } catch (error) {
       return null
     }

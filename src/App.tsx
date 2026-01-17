@@ -28,9 +28,9 @@ const getPageFromPath = (): AppPage => {
   }
 
   const rawPath = window.location.pathname || '/'
-  const normalizedPath = rawPath.replace(/\/+$/, '') || '/'
+  const pathWithoutTrailingSlash = rawPath.replace(/\/+$/, '') || '/'
 
-  return normalizedPath.startsWith('/profile') ? 'profile' : DEFAULT_PAGE
+  return pathWithoutTrailingSlash.startsWith('/profile') ? 'profile' : DEFAULT_PAGE
 }
 
 export default function App() {
