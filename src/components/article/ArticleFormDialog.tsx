@@ -105,7 +105,7 @@ export function ArticleFormDialog({
       location: formData.location.trim(),
       coverImageUrl: formData.coverImageUrl?.trim() || undefined,
       tags: normalizedTags,
-      visibility: formData.isNews ? ArticleVisibility.PUBLIC : formData.visibility
+      visibility: formData.visibility
     })
     onClose()
   }

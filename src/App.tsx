@@ -248,8 +248,8 @@ export default function App() {
     setIsFormOpen(true)
   }
 
-  const normalizeArticleInput = (data: CreateArticleInput): CreateArticleInput => {
-    const isNews = canTagNews ? data.isNews : false
+  const normalizeArticleInput = (data: CreateArticleInput, allowNews: boolean): CreateArticleInput => {
+    const isNews = allowNews ? data.isNews : false
     const visibility = isNews ? ArticleVisibility.PUBLIC : data.visibility
 
     return {
@@ -263,7 +263,7 @@ export default function App() {
     if (!user) return
 
     try {
-      const normalized = normalizeArticleInput(data)
+      const normalized = normalizeArticleInput(data, canTagNews)
       const newArticle = await articleService.createArticle(normalized, user.id)
       setArticles([newArticle, ...articles])
       toast.success('Article published successfully')
@@ -278,7 +278,7 @@ export default function App() {
     if (!editingArticle) return
 
     try {
-      const normalized = normalizeArticleInput(data)
+      const normalized = normalizeArticleInput(data, canTagNews)
       const updateData: UpdateArticleInput = {
         id: editingArticle.id,
         ...normalized
