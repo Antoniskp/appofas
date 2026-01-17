@@ -61,7 +61,6 @@ export default function App() {
 
     const { data: { subscription } } = authService.onAuthStateChange((currentUser) => {
       setUser(currentUser)
-      setIsAuthLoading(false)
     })
 
     return () => subscription.unsubscribe()
