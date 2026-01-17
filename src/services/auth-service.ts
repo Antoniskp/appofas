@@ -30,6 +30,9 @@ const mapSupabaseUser = (user: SupabaseUser | null): User | null => {
 }
 
 export class AuthService {
+  private getRedirectTarget() {
+    return `${window.location.origin}${window.location.pathname}`
+  }
   async getCurrentUser(): Promise<User | null> {
     try {
       const { data, error } = await supabase.auth.getUser()
@@ -79,7 +82,7 @@ export class AuthService {
     const { error } = await supabase.auth.signInWithOAuth({
       provider: 'github',
       options: {
-        redirectTo: `${window.location.origin}`
+        redirectTo: this.getRedirectTarget()
       }
     })
 
